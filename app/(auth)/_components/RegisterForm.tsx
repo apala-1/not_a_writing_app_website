@@ -1,6 +1,6 @@
 'use client';
 import { useState } from "react";
-import { registerSchema } from "@/app/lib/validation";
+import { registerSchema } from "@/app/(auth)/schema";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
