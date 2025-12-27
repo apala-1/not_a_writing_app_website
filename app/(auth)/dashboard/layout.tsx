@@ -27,7 +27,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       </header>
 
       {/* Body */}
-      <div className="flex flex-grow w-full">
+      <div className="flex grow w-full">
         {/* Sidebar (pushes content) */}
         {isOpen && (
           <aside className="w-64 bg-orange-100 shadow-md p-6 transition-all duration-300">
