@@ -3,6 +3,7 @@ import { login, register } from "@/lib/api/auth"
 import { LoginData, RegisterData } from "@/app/(auth)/schema"
 import { setAuthToken, setUserData, clearAuthCookies } from "../cookie"
 import { redirect } from "next/navigation";
+import axios from "../api/axios";
 export const handleRegister = async (data: RegisterData) => {
     try {
         const response = await register(data)
@@ -26,8 +27,6 @@ export const handleLogin = async (data: LoginData) => {
     try {
         const response = await login(data)
         if (response.success) {
-            await setAuthToken(response.token)
-            await setUserData(response.data)
             return {
                 success: true,
                 message: 'Login successful',
@@ -44,6 +43,11 @@ export const handleLogin = async (data: LoginData) => {
 }
 
 export const handleLogout = async () => {
-    await clearAuthCookies();
-    return redirect('/login');
+    try {
+        await axios.post("/auth/logout", {}, { withCredentials: true });
+    } catch (err) {
+        console.error("Logout failed", err);
+    }
+    await clearAuthCookies(); // optional if you also keep local cookie
+    return redirect("/login");
 }

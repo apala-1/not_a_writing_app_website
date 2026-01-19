@@ -1,6 +1,7 @@
 export const API = {
     AUTH: {
-        LOGIN: '/api/auth/login',
-        REGISTER: '/api/auth/register',
-    }
-}
+        LOGIN: '/auth/login',
+        REGISTER: '/auth/register',
+        LOGOUT: '/auth/logout',
+    },
+};

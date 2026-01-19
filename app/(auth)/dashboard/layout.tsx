@@ -1,9 +1,22 @@
 'use client';
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import axios from "@/lib//api/axios";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(true);
+  const router = useRouter();
+
+    const handleLogout = async () => {
+        try {
+            await axios.post("/auth/logout");
+            router.push("/login");
+        } catch (error) {
+            console.error("Logout failed");
+        }
+    };
+
 
   return (
     <div className="min-h-screen bg-orange-50 text-gray-800 flex flex-col">
@@ -22,7 +35,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </div>
         <nav className="space-x-6">
           <Link href="/" className="hover:text-orange-600">Home</Link>
-          <Link href="/logout" className="hover:text-orange-600">Logout</Link>
+          <button
+            onClick={handleLogout}
+            className="hover:text-orange-600"
+        >
+            Logout
+        </button>
         </nav>
       </header>
 
