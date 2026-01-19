@@ -10,6 +10,7 @@ import { handleRegister } from "@/lib/actions/auth-action";
 export default function RegisterForm() {
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [pending, setTransition] = useTransition();
   const router = useRouter();
 
@@ -68,29 +69,29 @@ export default function RegisterForm() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
 
         <div className="space-y-2">
-          <label htmlFor="firstname" className="text-sm font-medium text-gray-700">Firstname</label>
+          <label htmlFor="firstName" className="text-sm font-medium text-gray-700">Firstname</label>
           <input
-          {...register("firstname")}
-            id="firstname"
-            name="firstname"
+          {...register("firstName")}
+            id="firstName"
+            name="firstName"
             type="text"
             placeholder="Your firstname"
             className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition"
           />
-          {errors.firstname && <p className="text-sm text-red-600">{errors.firstname.message}</p>}
+          {errors.firstName && <p className="text-sm text-red-600">{errors.firstName.message}</p>}
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="lastname" className="text-sm font-medium text-gray-700">Lastname</label>
+          <label htmlFor="lastName" className="text-sm font-medium text-gray-700">Lastname</label>
           <input
-          {...register("lastname")}
-            id="lastname"
-            name="lastname"
+          {...register("lastName")}
+            id="lastName"
+            name="lastName"
             type="text"
             placeholder="Your lastname"
             className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition"
           />
-          {errors.lastname && <p className="text-sm text-red-600">{errors.lastname.message}</p>}
+          {errors.lastName && <p className="text-sm text-red-600">{errors.lastName.message}</p>}
         </div>
 
         <div className="space-y-2">
@@ -143,20 +144,38 @@ export default function RegisterForm() {
           {errors.password && <p className="text-sm text-red-600">{errors.password.message}</p>}
         </div>
 
-        <div className="space-y-1">
-                <label className="text-sm font-medium" htmlFor="confirmPassword">Confirm password</label>
-                <input
-                    id="confirmPassword"
-                    type="password"
-                    autoComplete="new-password"
-                    className="h-10 w-full rounded-md border border-black/10 dark:border-white/15 bg-background px-3 text-sm outline-none focus:border-foreground/40"
-                    {...register("confirmPassword")}
-                    placeholder="••••••"
-                />
-                {errors.confirmPassword?.message && (
-                    <p className="text-xs text-red-600">{errors.confirmPassword.message}</p>
-                )}
-            </div>
+        <div className="relative space-y-1">
+  <label
+    className="text-sm font-medium text-gray-700"
+    htmlFor="confirmPassword"
+  >
+    Confirm password
+  </label>
+
+  <input
+    id="confirmPassword"
+    type={showConfirmPassword ? "text" : "password"} 
+    autoComplete="new-password"
+    className="w-full border border-gray-300 rounded-lg px-4 py-3 pr-10 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition"
+    {...register("confirmPassword")}
+    placeholder="••••••"
+  />
+
+  <button
+    type="button"
+    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+    className="absolute right-3 top-[2.6rem] text-gray-500 hover:text-orange-600 transition"
+    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+    title={showConfirmPassword ? "Hide password" : "Show password"}
+  >
+    {showConfirmPassword ? "🙈" : "👁️"}
+  </button>
+
+  {errors.confirmPassword?.message && (
+    <p className="text-xs text-red-600">{errors.confirmPassword.message}</p>
+  )}
+</div>
+
 
         <button
           type="submit"
