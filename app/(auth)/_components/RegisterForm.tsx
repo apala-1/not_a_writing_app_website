@@ -1,39 +1,51 @@
 'use client';
-import { useState } from "react";
-import { registerSchema } from "@/app/(auth)/schema";
+import { startTransition, useState, useTransition } from "react";
+import { useForm } from "react-hook-form";
+import { RegisterData, registerSchema } from "@/app/(auth)/schema";
+import { zodResolver } from "@hookform/resolvers/zod"
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { handleRegister } from "@/lib/actions/auth-action";
 
 export default function RegisterForm() {
-  const [errors, setErrors] = useState<{ username?: string; email?: string; password?: string }>({});
+  const [globalError, setGlobalError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [pending, setTransition] = useTransition();
   const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget as HTMLFormElement);
-    const values = {
-      username: formData.get("username") as string,
-      email: formData.get("email") as string,
-      password: formData.get("password") as string,
-    };
+  // first, we initialize the react hook form
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterData>({
+    resolver: zodResolver(registerSchema),
+    mode: "onSubmit",
+  })
 
-    const result = registerSchema.safeParse(values);
-    if (!result.success) {
-      const fieldErrors: Record<string, string> = {};
-      result.error.issues.forEach(issue => {
-        fieldErrors[issue.path[0] as string] = issue.message;
-      });
-      setErrors(fieldErrors);
-      return;
-    }
+  // next, we define the submit handler
+  const onSubmit = async (values: RegisterData) => {
+    setGlobalError(null);
 
-    console.log("Register success:", result.data);
+    startTransition(async () => {
+      try {
+        const response = await handleRegister(values);
+
+        if(!response.success){
+          setGlobalError(response.message || "Registration failed");
+          return;
+        }
+
+        // if success, we redirect to login form
+        router.push("/login");
+      } catch (err: any) {
+        setGlobalError(err.message || "An unexpected error occured");
+      }
+    });
   };
 
   return (
     <div className="bg-white/95 backdrop-blur-sm p-8 sm:p-10 rounded-2xl shadow-xl w-full max-w-md border border-orange-100">
-      {/* Header: Back (left), Title (center), spacer (right) */}
       <div className="grid grid-cols-3 items-center mb-6">
         <button
           onClick={() => router.back()}
@@ -53,35 +65,65 @@ export default function RegisterForm() {
       {/* Divider */}
       <div className="h-px bg-orange-100 mb-6" />
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+
+        <div className="space-y-2">
+          <label htmlFor="firstname" className="text-sm font-medium text-gray-700">Firstname</label>
+          <input
+          {...register("firstname")}
+            id="firstname"
+            name="firstname"
+            type="text"
+            placeholder="Your firstname"
+            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition"
+          />
+          {errors.firstname && <p className="text-sm text-red-600">{errors.firstname.message}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="lastname" className="text-sm font-medium text-gray-700">Lastname</label>
+          <input
+          {...register("lastname")}
+            id="lastname"
+            name="lastname"
+            type="text"
+            placeholder="Your lastname"
+            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition"
+          />
+          {errors.lastname && <p className="text-sm text-red-600">{errors.lastname.message}</p>}
+        </div>
+
         <div className="space-y-2">
           <label htmlFor="username" className="text-sm font-medium text-gray-700">Username</label>
           <input
+          {...register("username")}
             id="username"
             name="username"
             type="text"
             placeholder="Your username"
             className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition"
           />
-          {errors.username && <p className="text-sm text-red-600">{errors.username}</p>}
+          {errors.username && <p className="text-sm text-red-600">{errors.username.message}</p>}
         </div>
 
         <div className="space-y-2">
           <label htmlFor="email" className="text-sm font-medium text-gray-700">Email</label>
           <input
+          {...register("email")}
             id="email"
             name="email"
             type="email"
             placeholder="you@example.com"
             className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition"
           />
-          {errors.email && <p className="text-sm text-red-600">{errors.email}</p>}
+          {errors.email && <p className="text-sm text-red-600">{errors.email.message}</p>}
         </div>
 
         <div className="space-y-2">
           <label htmlFor="password" className="text-sm font-medium text-gray-700">Password</label>
           <div className="relative">
             <input
+            {...register("password")}
               id="password"
               name="password"
               type={showPassword ? "text" : "password"}
@@ -98,16 +140,33 @@ export default function RegisterForm() {
               {showPassword ? "🙈" : "👁️"}
             </button>
           </div>
-          {errors.password && <p className="text-sm text-red-600">{errors.password}</p>}
+          {errors.password && <p className="text-sm text-red-600">{errors.password.message}</p>}
         </div>
 
+        <div className="space-y-1">
+                <label className="text-sm font-medium" htmlFor="confirmPassword">Confirm password</label>
+                <input
+                    id="confirmPassword"
+                    type="password"
+                    autoComplete="new-password"
+                    className="h-10 w-full rounded-md border border-black/10 dark:border-white/15 bg-background px-3 text-sm outline-none focus:border-foreground/40"
+                    {...register("confirmPassword")}
+                    placeholder="••••••"
+                />
+                {errors.confirmPassword?.message && (
+                    <p className="text-xs text-red-600">{errors.confirmPassword.message}</p>
+                )}
+            </div>
+
         <button
+          type="submit"
+          disabled={isSubmitting || pending}
           className="w-full bg-orange-500 text-white font-semibold py-3 rounded-lg hover:bg-orange-600 transition focus:outline-none focus:ring-2 focus:ring-orange-300"
         >
-          Create Account
+          {isSubmitting || pending ? "Creating Account..." : "Create Account"}
         </button>
 
-        {/* Already have account */}
+        {/* Already have an account */}
         <p className="text-center text-sm text-gray-700">
           Already have an account?{" "}
           <a href="/auth/login" className="text-orange-700 hover:text-orange-800 hover:underline font-medium">
