@@ -6,18 +6,16 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-
-// Imports from your schema and actions
 import { LoginData, loginSchema } from "@/app/(auth)/schema";
 import { handleLogin } from "@/lib/actions/auth-action";
 
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
+  const [globalSuccess, setGlobalSuccess] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
-  // 1. Initialize React Hook Form
   const {
     register,
     handleSubmit,
@@ -27,21 +25,24 @@ export default function LoginForm() {
     mode: "onSubmit",
   });
 
-  // 2. Define the unified submit handler
   const onSubmit = async (values: LoginData) => {
     setGlobalError(null);
+    setGlobalSuccess(null);
 
     startTransition(async () => {
       try {
         const response = await handleLogin(values);
-        
+
         if (!response.success) {
           setGlobalError(response.message || "Login failed");
           return;
         }
 
-        // Success: Redirect to dashboard
-        router.push("/dashboard");
+        // ✅ Show success bar briefly before redirect
+        setGlobalSuccess("Login successful! Redirecting...");
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 1500);
       } catch (err: any) {
         setGlobalError(err.message || "An unexpected error occurred");
       }
@@ -54,7 +55,7 @@ export default function LoginForm() {
       <div className="grid grid-cols-3 items-center mb-6">
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={() => router.push('/')}
           className="justify-self-start flex items-center gap-2 px-3 py-1.5 rounded-md text-orange-700 bg-orange-50 hover:bg-orange-100 hover:text-orange-800 transition focus:outline-none focus:ring-2 focus:ring-orange-300"
         >
           <span className="text-base">←</span>
@@ -69,7 +70,14 @@ export default function LoginForm() {
 
       <div className="h-px bg-orange-100 mb-6" />
 
-      {/* Global API Error Message */}
+      {/* Success Bar */}
+      {globalSuccess && (
+        <div className="mb-4 p-3 rounded bg-green-50 border border-green-200 text-center">
+          <p className="text-sm text-green-600 font-medium">{globalSuccess}</p>
+        </div>
+      )}
+
+      {/* Error Bar */}
       {globalError && (
         <div className="mb-4 p-3 rounded bg-red-50 border border-red-200 text-center">
           <p className="text-sm text-red-600 font-medium">{globalError}</p>

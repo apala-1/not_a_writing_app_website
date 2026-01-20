@@ -9,6 +9,7 @@ import { handleRegister } from "@/lib/actions/auth-action";
 
 export default function RegisterForm() {
   const [globalError, setGlobalError] = useState<string | null>(null);
+  const [globalSuccess, setGlobalSuccess] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [pending, setTransition] = useTransition();
@@ -27,6 +28,7 @@ export default function RegisterForm() {
   // next, we define the submit handler
   const onSubmit = async (values: RegisterData) => {
     setGlobalError(null);
+    setGlobalSuccess(null);
 
     startTransition(async () => {
       try {
@@ -38,7 +40,8 @@ export default function RegisterForm() {
         }
 
         // if success, we redirect to login form
-        router.push("/login");
+        setGlobalSuccess("Account created successfully! Redirecting to login...");
+        setTimeout(() => { router.push("/login"); }, 1500);
       } catch (err: any) {
         setGlobalError(err.message || "An unexpected error occured");
       }
@@ -65,6 +68,10 @@ export default function RegisterForm() {
 
       {/* Divider */}
       <div className="h-px bg-orange-100 mb-6" />
+      {/* Success Bar */} 
+      {globalSuccess && ( <div className="mb-4 p-3 rounded bg-green-50 border border-green-200 text-center"> <p className="text-sm text-green-600 font-medium">{globalSuccess}</p> </div> )} 
+      {/* Error Bar */} 
+      {globalError && ( <div className="mb-4 p-3 rounded bg-red-50 border border-red-200 text-center"> <p className="text-sm text-red-600 font-medium">{globalError}</p> </div> )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
 

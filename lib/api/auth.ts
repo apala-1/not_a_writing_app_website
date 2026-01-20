@@ -1,6 +1,6 @@
 import { LoginData, RegisterData } from "@/app/(auth)/schema"
-import axios from "../api/axios"
-import { API } from "../api/endpoints"
+import axios from "./axios"
+import { API } from "./endpoints"
 
 
 export const register = async (registerData: RegisterData) => {
@@ -14,9 +14,7 @@ export const register = async (registerData: RegisterData) => {
 
 export const login = async (loginData: LoginData) => {
     try {
-        const response = await axios.post(API.AUTH.LOGIN, loginData, {
-            withCredentials: true,
-        });
+        const response = await axios.post(API.AUTH.LOGIN, loginData)
         return response.data
     } catch (error: Error | any) {
         throw new Error(error.response?.data?.message || error.message || 'Login failed')
