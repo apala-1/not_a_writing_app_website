@@ -1,9 +1,21 @@
 'use client';
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(true);
+  const router = useRouter();
+
+  const handleClientLogout = () => {
+  try {
+    router.push("/login");
+  } catch (err) {
+    console.error("Logout failed", err);
+    alert("Logout failed, try again");
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-orange-50 text-gray-800 flex flex-col">
@@ -22,7 +34,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </div>
         <nav className="space-x-6">
           <Link href="/" className="hover:text-orange-600">Home</Link>
-          <Link href="/logout" className="hover:text-orange-600">Logout</Link>
+          <button
+            onClick={handleClientLogout}
+            className="hover:text-orange-600"
+        >
+            Logout
+        </button>
         </nav>
       </header>
 
