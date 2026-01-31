@@ -3,16 +3,16 @@
 import { useRouter } from "next/navigation";
 import { clearToken } from "@/lib/auth/storage";
 
-export default function Dashboard() {
+export default function LogoutButton() {
   const router = useRouter();
 
+  const handleLogout = () => {
+    clearToken();
+    router.push("/login");
+  };
+
   return (
-    <button
-      onClick={() => {
-        clearToken();
-        router.push("/login");
-      }}
-    >
+    <button onClick={handleLogout}>
       Logout
     </button>
   );

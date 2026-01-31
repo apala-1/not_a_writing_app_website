@@ -8,6 +8,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LoginData, loginSchema } from "@/app/(auth)/schema";
 import { handleLogin } from "@/lib/actions/auth-action";
+import { setToken } from "@/lib/auth/storage";
+import { login } from "@/lib/api/auth";
 
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -26,28 +28,22 @@ export default function LoginForm() {
   });
 
   const onSubmit = async (values: LoginData) => {
-    setGlobalError(null);
-    setGlobalSuccess(null);
+  setGlobalError(null);
+  setGlobalSuccess(null);
 
-    startTransition(async () => {
-      try {
-        const response = await handleLogin(values);
+  try {
+    const response = await login(values);
 
-        if (!response.success) {
-          setGlobalError(response.message || "Login failed");
-          return;
-        }
+    setToken(response.token);
+    setGlobalSuccess("Login successful! Redirecting...");
 
-        // ✅ Show success bar briefly before redirect
-        setGlobalSuccess("Login successful! Redirecting...");
-        setTimeout(() => {
-          router.push("/dashboard");
-        }, 1500);
-      } catch (err: any) {
-        setGlobalError(err.message || "An unexpected error occurred");
-      }
-    });
-  };
+    setTimeout(() => {
+      router.push("/dashboard");
+    }, 1500);
+  } catch (err: any) {
+    setGlobalError(err.message || "Login failed");
+  }
+};
 
   return (
     <div className="bg-white/95 backdrop-blur-sm p-8 sm:p-10 rounded-2xl shadow-xl w-full max-w-md border border-orange-100">

@@ -1,22 +1,40 @@
 import { LoginData, RegisterData } from "@/app/(auth)/schema"
 import axios from "./axios"
 import { API } from "./endpoints"
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
 
+export async function register(data: any) {
+  const res = await fetch(`${API_BASE}/api/v1/users/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
 
-export const register = async (registerData: RegisterData) => {
-    try {
-        const response = await axios.post(API.AUTH.REGISTER, registerData)
-        return response.data
-    } catch (error: Error | any) {
-        throw new Error(error.response?.data?.message || error.message || 'Registration failed')
-    }
+  const json = await res.json();
+
+  if (!res.ok) {
+    throw new Error(json.message || "Registration failed");
+  }
+
+  return json;
 }
 
-export const login = async (loginData: LoginData) => {
-    try {
-        const response = await axios.post(API.AUTH.LOGIN, loginData)
-        return response.data
-    } catch (error: Error | any) {
-        throw new Error(error.response?.data?.message || error.message || 'Login failed')
-    }
+export async function login(data: { email: string; password: string }) {
+  const res = await fetch(`${API_BASE}/api/v1/users/login/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  const json = await res.json();
+
+  if (!res.ok) {
+    throw new Error(json.message || "Login failed");
+  }
+
+  return json; // { success, token, data }
 }
