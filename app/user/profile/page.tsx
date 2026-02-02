@@ -1,13 +1,9 @@
-"use client";
-import { useAuth } from "@/context/AuthContext";
-
-export default function ProfilePage() {
-  const { user } = useAuth();
-
+// app/user/profile/page.tsx
+export default function UserProfilePage() {
   return (
     <div>
       <h1>User Profile</h1>
-      <pre>{JSON.stringify(user, null, 2)}</pre>
+      <p>Update logged-in user profile</p>
     </div>
   );
 }

@@ -1,7 +1,4 @@
-export default function EditUserPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  return <h1>Edit User: {params.id}</h1>;
+export default function EditUserPage({ params }: { params: { id: string } }) {
+  console.log("Edit page params:", params);
+  return <p>Editing user {params.id}</p>;
 }

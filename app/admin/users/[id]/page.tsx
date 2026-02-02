@@ -1,7 +1,4 @@
-export default function UserDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  return <h1>User ID: {params.id}</h1>;
+export default function UserPage({ params }: { params: { id: string } }) {
+  console.log("User page params:", params);
+  return <p>Viewing user {params.id}</p>;
 }

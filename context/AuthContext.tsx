@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refresh = async () => {
     try {
-      const res = await fetch("http://localhost:3000/api/v1/users/me", {
+      const res = await fetch("http://localhost:3000/api/v1/auth/me", {
         credentials: "include",
       });
 

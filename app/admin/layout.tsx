@@ -3,20 +3,26 @@ import { redirect } from "next/navigation";
 
 export default async function AdminLayout({
   children,
+  params,
 }: {
   children: React.ReactNode;
+  params: { id: string };
 }) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("accessToken")?.value;
-  const role = cookieStore.get("role")?.value;
+  // AdminLayout (optional)
+const cookieStore = await cookies();
+const token = cookieStore.get("accessToken")?.value;
+if (!token) redirect("/login");
 
-  if (!token) {
-    redirect("/login");
-  }
+// AdminUsersLayout
+const res = await fetch("http://localhost:3000/api/v1/auth/me", {
+  headers: { cookie: `accessToken=${token}` },
+  cache: "no-store",
+});
+if (!res.ok) redirect("/login");
+const user = await res.json();
+if (user.data.role !== "admin") redirect("/");
 
-  if (role !== "admin") {
-    redirect("/dashboard");
-  }
+// Now children render
+return <>{children}</>;
 
-  return <>{children}</>;
 }
