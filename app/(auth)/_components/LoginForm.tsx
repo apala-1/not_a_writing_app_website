@@ -32,9 +32,7 @@ export default function LoginForm() {
   setGlobalSuccess(null);
 
   try {
-    const response = await login(values);
-
-    setToken(response.token);
+    await login(values);
     setGlobalSuccess("Login successful! Redirecting...");
 
     setTimeout(() => {

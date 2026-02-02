@@ -4,7 +4,7 @@ import { API } from "./endpoints"
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export async function register(data: any) {
-  const res = await fetch(`${API_BASE}/api/v1/users/`, {
+  const res = await fetch(`${API_BASE}/api/v1/auth/register`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -22,12 +22,13 @@ export async function register(data: any) {
 }
 
 export async function login(data: { email: string; password: string }) {
-  const res = await fetch(`${API_BASE}/api/v1/users/login/`, {
+  const res = await fetch(`${API_BASE}/api/v1/auth/login/`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(data),
+    credentials: "include",
   });
 
   const json = await res.json();

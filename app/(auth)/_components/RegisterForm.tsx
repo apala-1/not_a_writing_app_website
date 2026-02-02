@@ -39,6 +39,7 @@ export default function RegisterForm() {
           name: `${values.firstName} ${values.lastName}`,
           email: values.email,
           password: values.password,
+          confirmPassword: values.confirmPassword,
         };
 
         const response = await registerUser(payload);
