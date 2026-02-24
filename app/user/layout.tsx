@@ -1,6 +1,8 @@
 // app/user/layout.tsx
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import Header from "./_components/Header";
+import Footer from "./_components/Footer";
 
 export default async function UserLayout({
   children,
@@ -14,5 +16,10 @@ export default async function UserLayout({
     redirect("/login");
   }
 
-  return <>{children}</>;
+
+  return <>
+  <Header/>
+  {children}
+  <Footer/>
+  </>;
 }

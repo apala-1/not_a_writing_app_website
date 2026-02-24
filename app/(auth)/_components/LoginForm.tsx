@@ -36,7 +36,7 @@ export default function LoginForm() {
     setGlobalSuccess("Login successful! Redirecting...");
 
     setTimeout(() => {
-      router.push("/dashboard");
+      router.push("/user/dashboard");
     }, 1500);
   } catch (err: any) {
     setGlobalError(err.message || "Login failed");
