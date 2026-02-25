@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
@@ -10,6 +10,13 @@ import { LoginData, loginSchema } from "@/app/(auth)/schema";
 import { handleLogin } from "@/lib/actions/auth-action";
 import { setToken } from "@/lib/auth/storage";
 import { login } from "@/lib/api/auth";
+import Script from "next/script";
+
+declare global {
+  interface Window {
+    google: any;
+  }
+}
 
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -43,7 +50,54 @@ export default function LoginForm() {
   }
 };
 
+const handleGoogleResponse = async (response: any) => {
+    try {
+      const res = await fetch("http://localhost:3000/api/v1/auth/google-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ idToken: response.credential }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+
+      router.push("/user/dashboard");
+    } catch (err: any) {
+      setGlobalError(err.message);
+    }
+  };
+
+  useEffect(() => {
+  const interval = setInterval(() => {
+    if (window.google && document.getElementById("googleBtn")) {
+      window.google.accounts.id.initialize({
+        client_id: process.env.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+        callback: handleGoogleResponse,
+      });
+
+      window.google.accounts.id.renderButton(
+        document.getElementById("googleBtn"),
+        {
+          theme: "outline",
+          size: "large",
+          width: 250,
+        }
+      );
+
+      clearInterval(interval);
+    }
+  }, 200);
+
+  return () => clearInterval(interval);
+}, []);
+
   return (
+    <>
+    <Script
+        src="https://accounts.google.com/gsi/client"
+        strategy="afterInteractive"
+      />
     <div className="bg-white/95 backdrop-blur-sm p-8 sm:p-10 rounded-2xl shadow-xl w-full max-w-md border border-orange-100">
       {/* Header */}
       <div className="grid grid-cols-3 items-center mb-6">
@@ -142,21 +196,16 @@ export default function LoginForm() {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            className="flex items-center justify-center gap-2 border border-gray-300 rounded-lg px-4 py-2.5 hover:bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-200"
-          >
-            <Image src="/images/googleLogo.png" alt="Google" width={20} height={20} />
-            <span className="text-sm font-medium">Google</span>
-          </button>
-          <button
-            type="button"
-            className="flex items-center justify-center gap-2 border border-gray-300 rounded-lg px-4 py-2.5 hover:bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-200"
-          >
-            <Image src="/images/facebookLogo.png" alt="Facebook" width={20} height={20} />
-            <span className="text-sm font-medium">Facebook</span>
-          </button>
-        </div>
+  <div id="googleBtn" className="flex justify-center col-span-1" />
+
+  <button
+    type="button"
+    className="flex items-center justify-center gap-2 border border-gray-300 rounded-lg px-4 py-2.5 hover:bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-200"
+  >
+    <Image src="/images/facebookLogo.png" alt="Facebook" width={20} height={20} />
+    <span className="text-sm font-medium">Facebook</span>
+  </button>
+</div>
 
         <p className="text-center text-sm text-gray-600 mt-4">
           Don't have an account?{" "}
@@ -166,5 +215,6 @@ export default function LoginForm() {
         </p>
       </form>
     </div>
+    </>
   );
 }
