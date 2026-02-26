@@ -49,9 +49,21 @@ export default function Dashboard() {
                 <span className="text-gray-400 text-xs">{new Date(post.createdAt).toLocaleString()}</span>
               </div>
 
-              <p className="text-gray-700 text-sm leading-relaxed mb-6">
+              <div className="text-gray-700 text-sm leading-relaxed mb-6">
+                {post.attachments && post.attachments.length > 0 && (
+                  <div className="mb-3">
+                    {post.attachments.map((attachment, index) => (
+                      <img
+                        key={index}
+                        src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${attachment.url}`}
+                        alt="Post attachment"
+                        className="w-full h-48 object-cover rounded-lg mb-2"
+                      />
+                    ))}
+                  </div>
+                )}
                 {post.content}
-              </p>
+              </div>
 
               <div className="flex items-center gap-6 text-gray-400">
                 <button className="flex items-center gap-1.5 hover:text-gray-600 transition-colors">

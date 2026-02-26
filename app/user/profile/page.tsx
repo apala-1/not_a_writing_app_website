@@ -61,7 +61,7 @@ useEffect(() => {
           <div className="w-24 h-24 rounded-full bg-gray-200 overflow-hidden">
             {profile.profilePicture && (
               <img
-                src={profile.profilePicture}
+                src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/profiles/${profile.profilePicture}`}
                 alt={profile.name}
                 className="w-full h-full object-cover"
               />
