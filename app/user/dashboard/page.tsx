@@ -4,16 +4,8 @@ import React, { useEffect, useState } from "react";
 import { ThumbsUp, MessageSquare, TrendingUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import axios from "@/lib/api/axios";
+import { Post } from "@/lib/types/post";
 
-interface Post {
-  _id: string;
-  author: { name: string; handle: string };
-  content: string;
-  likesCount: number;
-  commentsCount: number;
-  createdAt: string;
-  attachments?: { url: string; type: string }[];
-}
 
 export default function Dashboard() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -40,10 +32,17 @@ export default function Dashboard() {
             <div key={post._id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-gray-200"></div>
+                  <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
+                    {post.author.profilePicture && (
+                      <img
+                        src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/profiles/${post.author.profilePicture}`}
+                        alt={post.author.name}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                  </div>
                   <div>
                     <h3 className="font-bold text-gray-900">{post.author.name}</h3>
-                    <p className="text-gray-400 text-xs">{post.author.handle}</p>
                   </div>
                 </div>
                 <span className="text-gray-400 text-xs">{new Date(post.createdAt).toLocaleString()}</span>
@@ -57,7 +56,7 @@ export default function Dashboard() {
                         key={index}
                         src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${attachment.url}`}
                         alt="Post attachment"
-                        className="w-full h-48 object-cover rounded-lg mb-2"
+                        className="w-full h-auto object-cover rounded-lg mb-2"
                       />
                     ))}
                   </div>
