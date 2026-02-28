@@ -33,9 +33,11 @@ const userId = id; // now userId is defined
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
 
   // Fetch profile info
   useEffect(() => {
+    if (!userId) return;
     const fetchProfile = async () => {
       try {
         const res = await axios.get(`/api/v1/profile/profile/${userId}`);
@@ -63,26 +65,44 @@ const userId = id; // now userId is defined
       }
     };
 
+    const checkOwnProfile = async () => {
+        try {
+            const res = await axios.get('/api/v1/auth/me');
+            if (res.data.success) {
+            setIsOwnProfile(res.data.data._id === userId);
+            }
+        } catch (err) {
+            console.error('Failed to check own profile', err);
+        }
+    };
+
     fetchProfile();
     fetchPosts();
     fetchFollowStatus();
+    checkOwnProfile();
   }, [userId]);
 
   const handleFollowToggle = async () => {
-    try {
-      if (isFollowing) {
-        await axios.post('/api/v1/follow/unfollow', { targetUserId: userId });
-        setIsFollowing(false);
-        setProfile(prev => prev ? { ...prev, followersCount: prev.followersCount - 1 } : prev);
-      } else {
-        await axios.post('/api/v1/follow/follow', { targetUserId: userId });
-        setIsFollowing(true);
-        setProfile(prev => prev ? { ...prev, followersCount: prev.followersCount + 1 } : prev);
-      }
-    } catch (err) {
-      console.error('Follow/unfollow failed', err);
+  try {
+    if (isFollowing) {
+      await axios.post('/api/v1/follow/unfollow', { targetUserId: userId });
+
+      setIsFollowing(false);
+      setProfile(prev =>
+        prev ? { ...prev, followersCount: prev.followersCount - 1 } : prev
+      );
+    } else {
+      await axios.post('/api/v1/follow/follow', { targetUserId: userId });
+
+      setIsFollowing(true);
+      setProfile(prev =>
+        prev ? { ...prev, followersCount: prev.followersCount + 1 } : prev
+      );
     }
-  };
+  } catch (err) {
+    console.error('Follow/unfollow failed', err);
+  }
+};
 
   return (
     <main className="bg-gray-50 min-h-screen py-10">
@@ -112,14 +132,18 @@ const userId = id; // now userId is defined
                 <span>{profile.followingCount} Following</span>
               </div>
             </div>
-            <button
-              onClick={handleFollowToggle}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                isFollowing ? 'bg-gray-200 text-gray-800 hover:bg-gray-300' : 'bg-blue-500 text-white hover:bg-blue-600'
-              }`}
-            >
-              {isFollowing ? 'Following' : 'Follow'}
-            </button>
+            {!isOwnProfile && (
+  <button
+    onClick={handleFollowToggle}
+    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+      isFollowing
+        ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+        : 'bg-blue-500 text-white hover:bg-blue-600'
+    }`}
+  >
+    {isFollowing ? 'Unfollow' : 'Follow'}
+  </button>
+)}
           </div>
 
           {/* Posts */}
