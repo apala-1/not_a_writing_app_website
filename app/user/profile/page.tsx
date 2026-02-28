@@ -90,42 +90,44 @@ const fetchFollowing = async () => {
 
   // Like / Save functionality
   const toggleLike = async (postId: string) => {
-    try {
-      await axios.post(`/api/v1/post/toggle-like/${postId}`);
-      const currentPost =
-        posts.find(p => p._id === postId) ||
-        savedPosts.find(p => p._id === postId) ||
-        likedPosts.find(p => p._id === postId);
+  try {
+    await axios.post(`/api/v1/post/toggle-like/${postId}`);
+    setPosts(prev => prev.map(p =>
+      p._id === postId
+        ? {
+            ...p,
+            isLiked: !p.isLiked,
+            likesCount: p.isLiked ? p.likesCount - 1 : p.likesCount + 1
+          }
+        : p
+    ));
+  } catch (err) {
+    console.error("Like failed", err);
+  }
+};
 
-      if (!currentPost) return;
+const toggleSave = async (postId: string) => {
+  try {
+    await axios.post(`/api/v1/post/toggle-save/${postId}`);
+    setPosts(prev => prev.map(p =>
+      p._id === postId
+        ? {
+            ...p,
+            isSaved: !p.isSaved,
+            savesCount: p.isSaved ? p.savesCount - 1 : p.savesCount + 1
+          }
+        : p
+    ));
+  } catch (err) {
+    console.error("Save failed", err);
+  }
+};
 
-      updatePostInState(postId, {
-        isLiked: !currentPost.isLiked,
-        likesCount: currentPost.isLiked ? currentPost.likesCount - 1 : currentPost.likesCount + 1,
-      });
-    } catch (err) {
-      console.error("Like failed", err);
-    }
-  };
-
-  const toggleSave = async (postId: string) => {
-    try {
-      await axios.post(`/api/v1/post/toggle-save/${postId}`);
-      const currentPost =
-        posts.find(p => p._id === postId) ||
-        savedPosts.find(p => p._id === postId) ||
-        likedPosts.find(p => p._id === postId);
-
-      if (!currentPost) return;
-
-      updatePostInState(postId, {
-        isSaved: !currentPost.isSaved,
-        savesCount: currentPost.isSaved ? currentPost.savesCount - 1 : currentPost.savesCount + 1,
-      });
-    } catch (err) {
-      console.error("Save failed", err);
-    }
-  };
+const displayedPosts = activeTab === "posts"
+  ? posts
+  : activeTab === "saved"
+    ? posts.filter(p => p.isSaved)
+    : posts.filter(p => p.isLiked);
 
   const openEditModal = (post: Post) => {
     setEditPost(post);
@@ -214,8 +216,8 @@ const fetchFollowing = async () => {
 
         {/* Content Section */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {(activeTab === "posts" ? posts : activeTab === "saved" ? savedPosts : likedPosts).map(post => (
-            <div key={post._id} className="relative bg-white rounded-lg overflow-hidden border">
+          {displayedPosts.map(post => (
+    <div key={post._id} className="relative bg-white rounded-lg overflow-hidden border">
 
               {post.author._id === profile.userId && (
                 <div className="absolute top-2 right-2 flex gap-1 z-20">
