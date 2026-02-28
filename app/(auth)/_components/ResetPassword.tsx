@@ -100,10 +100,10 @@ export default function ResetPassword() {
             <div className="space-y-6">
               <div className="inline-flex items-center gap-3 bg-white/80 backdrop-blur-sm px-6 py-3 rounded-full shadow-lg">
                 <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-rose-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xl font-bold">A</span>
+                  <span className="text-white text-xl font-bold">HI</span>
                 </div>
                 <span className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-rose-600 bg-clip-text text-transparent">
-                  Your Brand
+                  Not A Writing App
                 </span>
               </div>
               

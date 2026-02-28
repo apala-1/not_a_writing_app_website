@@ -1,13 +1,16 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, PenLine, ChevronDown, X, Paperclip } from 'lucide-react';
+import { Search, PenLine, ChevronDown, X, Paperclip, Bell } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { clearToken } from '@/lib/auth/storage';
 import axios from '@/lib/api/axios';
 import Link from 'next/link';
+import logo from '../../../public/images/pencil.jpg';
+import Image from 'next/image';
 
 interface User {
+  _id: string;
   name: string;
   profilePicture?: string;
 }
@@ -18,6 +21,10 @@ export default function Header() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<User[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [content, setContent] = useState('');
@@ -27,8 +34,9 @@ export default function Header() {
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
 
-  // Fetch user
+  // Fetch logged-in user
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -41,7 +49,7 @@ export default function Header() {
     fetchUser();
   }, []);
 
-  // Close dropdown or modal if clicked outside
+  // Click outside to close dropdowns/modals
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -50,10 +58,30 @@ export default function Header() {
       if (formRef.current && !formRef.current.contains(event.target as Node)) {
         setShowForm(false);
       }
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setSearchOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Search users
+  useEffect(() => {
+    const fetchSearch = async () => {
+      if (!searchTerm.trim()) return setSearchResults([]);
+      try {
+        const res = await axios.get('/api/v1/follow/search', {
+          params: { q: searchTerm },
+        });
+        if (res.data.success) setSearchResults(res.data.data);
+      } catch (err) {
+        console.error('Search failed', err);
+      }
+    };
+    const timeout = setTimeout(fetchSearch, 300); // debounce
+    return () => clearTimeout(timeout);
+  }, [searchTerm]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,28 +117,70 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center gap-2">
-          <div className="bg-yellow-400 p-2 rounded-xl text-white">
             <Link href='/user/dashboard'>
-              <PenLine size={24} className="text-gray-800" strokeWidth={2.5} />
+              <Image src={logo} alt="Logo" width={54} height={54} className="w-12 h-12" />
             </Link>
-          </div>
         </div>
 
         {/* Search */}
-        <div className="flex-1 max-w-2xl mx-8 relative">
+        <div ref={searchRef} className="flex-1 max-w-2xl mx-8 relative">
           <input
             type="text"
             placeholder="Search posts, writers, tags.."
             className="w-full pl-4 pr-10 py-2 border border-gray-400 rounded-full focus:outline-none focus:border-gray-500 bg-transparent text-sm placeholder-gray-500"
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setSearchOpen(true);
+            }}
+            onFocus={() => searchTerm && setSearchOpen(true)}
           />
           <Search
             size={18}
             className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500"
           />
+
+          {searchOpen && searchResults.length > 0 && (
+            <div className="absolute mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-72 overflow-y-auto">
+              {searchResults.map((u) => (
+                <div
+                  key={u._id}
+                  className="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-gray-100"
+                  onClick={() => {
+                    router.push(`/user/profile/${u._id}`);
+                    setSearchOpen(false);
+                    setSearchTerm('');
+                  }}
+                >
+                  <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden">
+                    {u.profilePicture ? (
+                      <img
+                        src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/profiles/${u.profilePicture}`}
+                        alt={u.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="w-full h-full flex items-center justify-center text-gray-500">
+                        {u.name[0]?.toUpperCase() || 'U'}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-sm text-gray-800">{u.name}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
+          {/* Notifications */}
+          <button className="relative text-gray-600 hover:text-gray-800">
+            <Bell size={20} />
+            {/* optional badge */}
+            <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+          </button>
+
           {/* Write Button */}
           <button
             className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-medium px-6 py-2 rounded-full text-sm transition-colors flex items-center gap-1"
@@ -143,24 +213,16 @@ export default function Header() {
 
             {dropdownOpen && (
               <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden z-50">
-                <button className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-900" onClick={() => router.push("/user/dashboard")}>
-                  Home
-                </button>
-                <button className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-900" onClick={() => router.push("/user/profile")}>
-                  Profile
-                </button>
-                <button className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-900" onClick={() => router.push("/user/settings")}>
-                  Settings
-                </button>
+                <button className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-900" onClick={() => router.push("/user/dashboard")}>Home</button>
+                <button className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-900" onClick={() => router.push("/user/profile")}>Profile</button>
+                <button className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-900" onClick={() => router.push("/user/settings")}>Settings</button>
                 <button
                   className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-900"
                   onClick={() => {
                     clearToken();
                     router.push('/login');
                   }}
-                >
-                  Logout
-                </button>
+                >Logout</button>
               </div>
             )}
           </div>
@@ -168,67 +230,82 @@ export default function Header() {
       </div>
 
       {/* Post Modal */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex items-center justify-center z-50">
-          <div ref={formRef} className="bg-white w-full max-w-xl p-6 rounded shadow-lg relative">
-            <button className="absolute top-4 right-4" onClick={() => setShowForm(false)}>
-              <X size={20} />
-            </button>
-            <h2 className="text-xl font-bold mb-4">Create Post</h2>
-            {error && <p className="text-red-600 mb-2">{error}</p>}
-            {success && <p className="text-green-600 mb-2">{success}</p>}
-            <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-              <input
-                type="text"
-                placeholder="Title"
-                value={title}
-                onChange={e => setTitle(e.target.value)}
-                className="border px-3 py-2 rounded placeholder-gray-500"
-                required
-              />
-              <input
-                type="text"
-                placeholder="Description"
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-                className="border px-3 py-2 rounded placeholder-gray-500"
-                required
-              />
-              <textarea
-                placeholder="Content"
-                value={content}
-                onChange={e => setContent(e.target.value)}
-                className="border px-3 py-2 rounded h-36 placeholder-gray-500"
-                required
-              />
-              {/* Attachments */}
-              <label className="flex items-center gap-2 cursor-pointer text-gray-700 hover:text-gray-900">
-                <Paperclip size={18} />
-                <span className="text-sm">Attach files</span>
-                <input
-                  type="file"
-                  multiple
-                  className="hidden"
-                  onChange={e => setAttachments(Array.from(e.target.files || []))}
-                />
-              </label>
-              {attachments.length > 0 && (
-                <ul className="text-sm text-gray-600 ml-5 list-disc">
-                  {attachments.map((file, i) => (
-                    <li key={i}>{file.name}</li>
-                  ))}
-                </ul>
-              )}
-              <button
-                type="submit"
-                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded mt-2"
-              >
-                Publish
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+{showForm && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center">
+    {/* Blurred semi-transparent overlay */}
+    <div
+      className="absolute inset-0 bg-transparent bg-opacity-30 backdrop-blur-sm"
+      onClick={() => setShowForm(false)} // optional: click outside to close
+    ></div>
+
+    {/* Centered modal */}
+    <div
+      ref={formRef}
+      className="relative bg-white w-full max-w-xl p-6 rounded-xl shadow-xl z-50"
+    >
+      <button
+        className="absolute top-4 right-4"
+        onClick={() => setShowForm(false)}
+      >
+        <X size={20} />
+      </button>
+
+      <h2 className="text-xl font-bold mb-4">Create Post</h2>
+      {error && <p className="text-red-600 mb-2">{error}</p>}
+      {success && <p className="text-green-600 mb-2">{success}</p>}
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <input
+          type="text"
+          placeholder="Title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="border px-3 py-2 rounded placeholder-gray-500"
+          required
+        />
+        <input
+          type="text"
+          placeholder="Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="border px-3 py-2 rounded placeholder-gray-500"
+          required
+        />
+        <textarea
+          placeholder="Content"
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          className="border px-3 py-2 rounded h-36 placeholder-gray-500"
+          required
+        />
+        {/* Attachments */}
+        <label className="flex items-center gap-2 cursor-pointer text-gray-700 hover:text-gray-900">
+          <Paperclip size={18} />
+          <span className="text-sm">Attach files</span>
+          <input
+            type="file"
+            multiple
+            className="hidden"
+            onChange={(e) => setAttachments(Array.from(e.target.files || []))}
+          />
+        </label>
+        {attachments.length > 0 && (
+          <ul className="text-sm text-gray-600 ml-5 list-disc">
+            {attachments.map((file, i) => (
+              <li key={i}>{file.name}</li>
+            ))}
+          </ul>
+        )}
+        <button
+          type="submit"
+          className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded mt-2"
+        >
+          Publish
+        </button>
+      </form>
+    </div>
+  </div>
+)}
     </header>
   );
 }

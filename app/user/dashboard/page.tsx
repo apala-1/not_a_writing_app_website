@@ -13,7 +13,7 @@ export default function Dashboard() {
   const [commentsMap, setCommentsMap] = useState<Record<string, Comment[]>>({});
   const [commentInput, setCommentInput] = useState<Record<string, string>>({});
   const [expandedPosts, setExpandedPosts] = useState<Record<string, boolean>>({});
-  const [activePostComments, setActivePostComments] = useState<Post | null>(null);
+  
   const router = useRouter();
 
   useEffect(() => {
@@ -175,21 +175,25 @@ const addComment = async (postId: string) => {
               </button>
 
               {/* COMMENT */}
+              {/* COMMENT */}
               <button
-  onClick={async () => {
-    // Fetch comments for this post if not already loaded
-    if (!commentsMap[post._id]) {
-      await fetchComments(post._id);
-    }
+                  onClick={async () => {
+                    // toggle expanded state
+                    setExpandedPosts(prev => ({
+                      ...prev,
+                      [post._id]: !prev[post._id],
+                    }));
 
-    // Open modal
-    setActivePostComments(post);
-  }}
-  className="flex items-center gap-1.5 hover:text-gray-600 transition-colors"
->
-  <MessageSquare size={16} />
-  <span className="text-xs font-medium">{post.commentsCount}</span>
-</button>
+                    // fetch comments only if not already loaded
+                    if (!commentsMap[post._id]) {
+                      await fetchComments(post._id);
+                    }
+                  }}
+                  className="flex items-center gap-1.5 hover:text-gray-600 transition-colors"
+                >
+                  <MessageSquare size={16} />
+                  <span className="text-xs font-medium">{post.commentsCount}</span>
+              </button>
 
               {/* SAVE */}
               <button
@@ -205,63 +209,36 @@ const addComment = async (postId: string) => {
               </button>
 
             </div>
-           {activePostComments && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center">
-    {/* Blurred dashboard background */}
-    <div className="absolute inset-0 backdrop-blur-sm bg-transparent"></div>
+            {expandedPosts[post._id] && (
+  <div className="mt-4 space-y-3">
+    {/* Existing comments */}
+    {commentsMap[post._id]?.map(comment => (
+      <div key={comment._id} className="flex gap-2 text-sm">
+        <span className="font-semibold">{comment.user.name}:</span>
+        <span>{comment.content}</span>
+      </div>
+    ))}
 
-    {/* Modal content */}
-    <div className="relative w-full max-w-lg bg-white rounded-xl p-6 z-50 shadow-lg">
-      {/* Close button */}
+    {/* Input */}
+    <div className="flex gap-2 mt-2">
+      <input
+        value={commentInput[post._id] || ""}
+        onChange={(e) =>
+          setCommentInput(prev => ({
+            ...prev,
+            [post._id]: e.target.value,
+          }))
+        }
+        placeholder="Write a comment..."
+        className="flex-1 border rounded-lg px-3 py-1 text-sm"
+      />
+
       <button
-        className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
-        onClick={() => setActivePostComments(null)}
+        onClick={() => addComment(post._id)}
+        className="text-blue-600 text-sm font-medium"
       >
-        ✕
+        Post
       </button>
-
-      <h2 className="text-lg font-bold mb-4">Comments</h2>
-
-      <div className="max-h-80 overflow-y-auto space-y-3">
-        {commentsMap[activePostComments._id]?.map(comment => (
-          <div key={comment._id} className="flex gap-2 items-start">
-            <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden">
-              {comment.user.profilePicture && (
-                <img
-                  src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/profiles/${comment.user.profilePicture}`}
-                  alt={comment.user.name}
-                  className="w-full h-full object-cover"
-                />
-              )}
-            </div>
-            <div>
-              <span className="font-semibold">{comment.user.name}</span>
-              <p className="text-sm text-gray-700">{comment.content}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Input */}
-      <div className="flex gap-2 mt-4">
-        <input
-          value={commentInput[activePostComments._id] || ""}
-          onChange={e =>
-            setCommentInput(prev => ({
-              ...prev,
-              [activePostComments._id]: e.target.value,
-            }))
-          }
-          placeholder="Write a comment..."
-          className="flex-1 border rounded-lg px-3 py-1 text-sm"
-        />
-        <button
-          onClick={() => addComment(activePostComments._id)}
-          className="text-blue-600 text-sm font-medium"
-        >
-          Post
-        </button>
-      </div>
     </div>
   </div>
 )}
