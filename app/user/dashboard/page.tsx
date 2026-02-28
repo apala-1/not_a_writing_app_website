@@ -1,14 +1,19 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { ThumbsUp, MessageSquare, TrendingUp } from "lucide-react";
+import { ThumbsUp, MessageSquare, TrendingUp, Bookmark } from "lucide-react";
 import { useRouter } from "next/navigation";
 import axios from "@/lib/api/axios";
 import { Post } from "@/lib/types/post";
+import { Comment } from "@/lib/types/comment";
 
 
 export default function Dashboard() {
   const [posts, setPosts] = useState<Post[]>([]);
+  const [commentsMap, setCommentsMap] = useState<Record<string, Comment[]>>({});
+  const [commentInput, setCommentInput] = useState<Record<string, string>>({});
+  const [expandedPosts, setExpandedPosts] = useState<Record<string, boolean>>({});
+  const [activePostComments, setActivePostComments] = useState<Post | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -23,6 +28,93 @@ export default function Dashboard() {
 
     fetchPosts();
   }, []);
+
+  const toggleLike = async (postId: string) => {
+  try {
+    const res = await axios.post(`/api/v1/post/toggle-like/${postId}`);
+
+    setPosts(prev =>
+      prev.map(post =>
+        post._id === postId
+          ? {
+              ...post,
+              isLiked: !post.isLiked,
+              likesCount: post.isLiked
+                ? post.likesCount - 1
+                : post.likesCount + 1,
+            }
+          : post
+      )
+    );
+  } catch (err) {
+    console.error("Like failed", err);
+  }
+};
+
+const toggleSave = async (postId: string) => {
+  try {
+    const res = await axios.post(`/api/v1/post/toggle-save/${postId}`);
+
+    setPosts(prev =>
+      prev.map(post =>
+        post._id === postId
+          ? {
+              ...post,
+              isSaved: !post.isSaved,
+              savesCount: post.isSaved
+                ? (post.savesCount || 1) - 1
+                : (post.savesCount || 0) + 1,
+            }
+          : post
+      )
+    );
+  } catch (err) {
+    console.error("Save failed", err);
+  }
+};
+
+const fetchComments = async (postId: string) => {
+  try {
+    const res = await axios.get(`/api/v1/comments/post/${postId}`);
+
+    setCommentsMap(prev => ({
+      ...prev,
+      [postId]: res.data.data,
+    }));
+  } catch (err) {
+    console.error("Failed to load comments", err);
+  }
+};
+
+const addComment = async (postId: string) => {
+  const content = commentInput[postId];
+  if (!content?.trim()) return;
+
+  try {
+    const res = await axios.post("/api/v1/comments", {
+      postId,
+      content,
+    });
+
+    // Optimistic update
+    setCommentsMap(prev => ({
+      ...prev,
+      [postId]: [...(prev[postId] || []), res.data.data],
+    }));
+
+    setPosts(prev =>
+      prev.map(post =>
+        post._id === postId
+          ? { ...post, commentsCount: post.commentsCount + 1 }
+          : post
+      )
+    );
+
+    setCommentInput(prev => ({ ...prev, [postId]: "" }));
+  } catch (err) {
+    console.error("Comment failed", err);
+  }
+};
 
   return (
     <main className="bg-gray-50 min-h-screen py-10 relative">
@@ -65,15 +157,114 @@ export default function Dashboard() {
               </div>
 
               <div className="flex items-center gap-6 text-gray-400">
-                <button className="flex items-center gap-1.5 hover:text-gray-600 transition-colors">
-                  <ThumbsUp size={16} />
-                  <span className="text-xs font-medium">{post.likesCount}</span>
-                </button>
-                <button className="flex items-center gap-1.5 hover:text-gray-600 transition-colors">
-                  <MessageSquare size={16} />
-                  <span className="text-xs font-medium">{post.commentsCount}</span>
-                </button>
-              </div>
+
+              {/* LIKE */}
+              <button
+                onClick={() => toggleLike(post._id)}
+                className={`flex items-center gap-1.5 transition-colors ${
+                  post.isLiked ? "text-blue-600" : "hover:text-gray-600"
+                }`}
+              >
+                <ThumbsUp
+                  size={16}
+                  fill={post.isLiked ? "currentColor" : "none"}
+                />
+                <span className="text-xs font-medium">
+                  {post.likesCount}
+                </span>
+              </button>
+
+              {/* COMMENT */}
+              <button
+  onClick={async () => {
+    // Fetch comments for this post if not already loaded
+    if (!commentsMap[post._id]) {
+      await fetchComments(post._id);
+    }
+
+    // Open modal
+    setActivePostComments(post);
+  }}
+  className="flex items-center gap-1.5 hover:text-gray-600 transition-colors"
+>
+  <MessageSquare size={16} />
+  <span className="text-xs font-medium">{post.commentsCount}</span>
+</button>
+
+              {/* SAVE */}
+              <button
+                onClick={() => toggleSave(post._id)}
+                className={`flex items-center gap-1.5 transition-colors ${
+                  post.isSaved ? "text-yellow-500" : "hover:text-gray-600"
+                }`}
+              >
+                <Bookmark
+                  size={16}
+                  fill={post.isSaved ? "currentColor" : "none"}
+                />
+              </button>
+
+            </div>
+           {activePostComments && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center">
+    {/* Blurred dashboard background */}
+    <div className="absolute inset-0 backdrop-blur-sm bg-transparent"></div>
+
+    {/* Modal content */}
+    <div className="relative w-full max-w-lg bg-white rounded-xl p-6 z-50 shadow-lg">
+      {/* Close button */}
+      <button
+        className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
+        onClick={() => setActivePostComments(null)}
+      >
+        ✕
+      </button>
+
+      <h2 className="text-lg font-bold mb-4">Comments</h2>
+
+      <div className="max-h-80 overflow-y-auto space-y-3">
+        {commentsMap[activePostComments._id]?.map(comment => (
+          <div key={comment._id} className="flex gap-2 items-start">
+            <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden">
+              {comment.user.profilePicture && (
+                <img
+                  src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/profiles/${comment.user.profilePicture}`}
+                  alt={comment.user.name}
+                  className="w-full h-full object-cover"
+                />
+              )}
+            </div>
+            <div>
+              <span className="font-semibold">{comment.user.name}</span>
+              <p className="text-sm text-gray-700">{comment.content}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Input */}
+      <div className="flex gap-2 mt-4">
+        <input
+          value={commentInput[activePostComments._id] || ""}
+          onChange={e =>
+            setCommentInput(prev => ({
+              ...prev,
+              [activePostComments._id]: e.target.value,
+            }))
+          }
+          placeholder="Write a comment..."
+          className="flex-1 border rounded-lg px-3 py-1 text-sm"
+        />
+        <button
+          onClick={() => addComment(activePostComments._id)}
+          className="text-blue-600 text-sm font-medium"
+        >
+          Post
+        </button>
+      </div>
+    </div>
+  </div>
+)}
             </div>
           ))}
         </div>

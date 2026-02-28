@@ -28,6 +28,11 @@ export default function UserProfilePage() {
   const [followers, setFollowers] = useState<Profile[]>([]);
   const [following, setFollowing] = useState<Profile[]>([]);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [editPost, setEditPost] = useState<Post | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [editAttachments, setEditAttachments] = useState<File[]>([]);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -48,6 +53,27 @@ export default function UserProfilePage() {
 
     fetchProfile();
   }, []);
+
+   const openEditModal = (post: Post) => {
+    setEditPost(post);
+    setEditTitle(post.title || '');
+    setEditDescription(post.description || '');
+    setEditContent(post.content || '');
+    setEditAttachments([]);
+  };
+
+  const handleDeletePost = async (postId: string) => {
+  if (!confirm("Are you sure you want to delete this post?")) return;
+
+  try {
+    await axios.delete(`/api/v1/posts/${postId}`);
+    setPosts(posts.filter(p => p._id !== postId));
+    if (selectedPost?._id === postId) setSelectedPost(null);
+  } catch (err) {
+    console.error(err);
+  }
+};
+
 
   if (loading) return <p className="p-6">Loading profile...</p>;
   if (!profile) return <p className="p-6 text-red-500">Profile not found</p>;
@@ -156,22 +182,49 @@ export default function UserProfilePage() {
 
       {/* POSTS */}
       {activeTab === "posts" &&
-        posts.map((post) => (
-          <div
-            key={post._id}
-            onClick={() => setSelectedPost(post)}
-            className="bg-white rounded-lg overflow-hidden border cursor-pointer hover:opacity-90 transition"
-          >
-            {post.attachments?.map((att, idx) => (
-              <img
-                key={idx}
-                src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${att.url}`}
-                alt="Post"
-                className="w-full h-64 object-cover"
-              />
-            ))}
+  posts.map((post) => {
+    console.log("Comparing", post.author._id, profile.userId); // ✅ safe place
+
+    return (
+      <div
+        key={post._id}
+        className="relative bg-white rounded-lg overflow-hidden border hover:opacity-90 transition"
+      >
+        {post.author._id === profile.userId && (
+          <div className="absolute top-2 right-2 flex gap-1 z-20">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                openEditModal(post);
+              }}
+              className="px-2 py-1 text-xs bg-white border rounded hover:bg-gray-100"
+            >
+              Edit
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeletePost(post._id);
+              }}
+              className="px-2 py-1 text-xs bg-red-100 border text-red-600 rounded hover:bg-red-200"
+            >
+              Delete
+            </button>
           </div>
+        )}
+        {post.attachments?.map((att, idx) => (
+          <img
+            key={idx}
+            src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${att.url}`}
+            alt="Post"
+            className="w-full h-64 object-cover relative z-0"
+            onClick={() => setSelectedPost(post)}
+          />
         ))}
+      </div>
+    );
+  })}
+        
 
       {/* SAVED */}
       {activeTab === "saved" &&
@@ -287,6 +340,15 @@ export default function UserProfilePage() {
             <span>{selectedPost.commentsCount} Comments</span>
           </div>
         </div>
+
+        {selectedPost.author._id === profile.userId && (
+  <button
+    onClick={() => handleDeletePost(selectedPost._id)}
+    className="mt-2 px-4 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200 text-sm"
+  >
+    Delete Post
+  </button>
+)}
 
       </div>
     </div>

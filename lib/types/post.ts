@@ -13,16 +13,21 @@ export interface Post {
   _id: string;
   title: string;
   description: string;
-  content: any; // matches backend's Schema.Types.Mixed
+  content: any;
   author: Author;
   attachments?: Attachment[];
   status: "draft" | "published";
   visibility: "public" | "private";
+
   likesCount: number;
   commentsCount: number;
   sharesCount: number;
   savesCount: number;
   viewsCount: number;
+
+  isLiked?: boolean;
+  isSaved?: boolean;
+
   createdAt: string;
   updatedAt: string;
 }
