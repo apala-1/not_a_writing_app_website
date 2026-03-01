@@ -25,24 +25,28 @@ export default function ChatBox({ userId, close }: { userId: string; close: () =
   }, [])
 
   useEffect(() => {
-    if (!me) return
+  if (!me) return;
 
-    const loadMessages = async () => {
-      const res = await axios.get(`/api/v1/chat/conversation/${me}/${userId}`)
-      setMessages(res.data.data)
+  const loadMessages = async () => {
+    const res = await axios.get(`/api/v1/chat/conversation/${me}/${userId}`);
+    setMessages(res.data.data);
+
+    // Mark messages as read
+    await axios.post(`/api/v1/chat/mark-as-read`, { senderId: userId });
+  }
+
+  loadMessages();
+
+  socket.on('receiveMessage', (msg: Message) => {
+    if (msg.senderId === userId || msg.receiverId === userId) {
+      setMessages(prev => [...prev, msg]);
     }
-    loadMessages()
+  });
 
-    socket.on('receiveMessage', (msg: Message) => {
-      if (msg.senderId === userId || msg.receiverId === userId) {
-        setMessages(prev => [...prev, msg])
-      }
-    })
-
-    return () => {
-      socket.off('receiveMessage')
-    }
-  }, [me, userId])
+  return () => {
+    socket.off('receiveMessage');
+  }
+}, [me, userId]);
 
   const sendMessage = async () => {
     if (!text.trim() || !me) return
