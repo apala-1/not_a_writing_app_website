@@ -5,6 +5,7 @@ export interface Author {
 }
 
 export interface Attachment {
+  _id: string;
   url: string;
   type: "image" | "gif" | "file" | "pjpeg" | "webp";
 }

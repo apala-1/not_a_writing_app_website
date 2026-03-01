@@ -34,6 +34,7 @@ export default function UserProfilePage() {
   const [editDescription, setEditDescription] = useState('');
   const [editContent, setEditContent] = useState('');
   const [editAttachments, setEditAttachments] = useState<File[]>([]);
+  const [editExistingAttachments, setEditExistingAttachments] = useState<{url: string, _id: string}[]>([]);
 
   // Fetch profile & posts
   useEffect(() => {
@@ -80,6 +81,7 @@ const fetchFollowing = async () => {
     console.error(err);
   }
 };
+
 
   // Helper to update posts in all tabs
   const updatePostInState = (postId: string, changes: Partial<Post>) => {
@@ -129,18 +131,21 @@ const displayedPosts = activeTab === "posts"
     ? posts.filter(p => p.isSaved)
     : posts.filter(p => p.isLiked);
 
-  const openEditModal = (post: Post) => {
-    setEditPost(post);
-    setEditTitle(post.title || '');
-    setEditDescription(post.description || '');
-    setEditContent(post.content || '');
-    setEditAttachments([]);
-  };
+ const openEditModal = (post: Post) => {
+  setEditPost(post);
+  setEditTitle(post.title || '');
+  setEditDescription(post.description || '');
+  setEditContent(post.content || '');
+  setEditAttachments([]);
+  setEditExistingAttachments(
+    (post.attachments || []).map(att => ({ url: att.url, _id: att._id || att.url }))
+  );
+};
 
   const handleDeletePost = async (postId: string) => {
     if (!confirm("Are you sure you want to delete this post?")) return;
     try {
-      await axios.delete(`/api/v1/posts/${postId}`);
+      await axios.delete(`/api/v1/post/${postId}`);
       setPosts(prev => prev.filter(p => p._id !== postId));
       setSavedPosts(prev => prev.filter(p => p._id !== postId));
       setLikedPosts(prev => prev.filter(p => p._id !== postId));
@@ -219,7 +224,7 @@ const displayedPosts = activeTab === "posts"
           {displayedPosts.map(post => (
     <div key={post._id} className="relative bg-white rounded-lg overflow-hidden border">
 
-              {post.author._id === profile.userId && (
+              {post.author._id === profile._id && (
                 <div className="absolute top-2 right-2 flex gap-1 z-20">
                   <button onClick={(e) => { e.stopPropagation(); openEditModal(post); }} className="px-2 py-1 text-xs bg-white border rounded hover:bg-gray-100">Edit</button>
                   <button onClick={(e) => { e.stopPropagation(); handleDeletePost(post._id); }} className="px-2 py-1 text-xs bg-red-100 border text-red-600 rounded hover:bg-red-200">Delete</button>
@@ -305,6 +310,88 @@ const displayedPosts = activeTab === "posts"
             </div>
           </div>
         )}
+
+        {editPost && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white w-96 p-4 rounded-lg flex flex-col gap-3">
+      <h2 className="text-lg font-semibold">Edit Post</h2>
+      <input
+        type="text"
+        value={editTitle}
+        onChange={e => setEditTitle(e.target.value)}
+        placeholder="Title"
+        className="border px-2 py-1 rounded"
+      />
+      <textarea
+        value={editDescription}
+        onChange={e => setEditDescription(e.target.value)}
+        placeholder="Description"
+        className="border px-2 py-1 rounded"
+      />
+      <textarea
+        value={editContent}
+        onChange={e => setEditContent(e.target.value)}
+        placeholder="Content"
+        className="border px-2 py-1 rounded"
+      />
+      <input
+        type="file"
+        multiple
+        onChange={e => setEditAttachments(Array.from(e.target.files || []))}
+      />
+
+      <input
+  type="file"
+  multiple
+  onChange={e => setEditAttachments(Array.from(e.target.files || []))}
+/>
+
+{/* Existing attachments list */}
+<div className="flex flex-col gap-1 mt-2">
+  {editExistingAttachments.map(att => (
+    <div key={att._id} className="flex justify-between items-center bg-gray-100 p-1 rounded">
+      <span className="truncate">{att.url}</span>
+      <button
+        className="text-red-500"
+        onClick={() =>
+          setEditExistingAttachments(prev => prev.filter(a => a._id !== att._id))
+        }
+      >
+        Delete
+      </button>
+    </div>
+  ))}
+</div>
+
+      <div className="flex justify-end gap-2 mt-2">
+        <button className="px-3 py-1 rounded bg-gray-200" onClick={() => setEditPost(null)}>Cancel</button>
+        <button className="px-3 py-1 rounded bg-blue-500 text-white" onClick={async () => {
+          if (!editPost) return;
+          const formData = new FormData();
+formData.append("title", editTitle);
+formData.append("description", editDescription);
+formData.append("content", editContent);
+
+// new files
+editAttachments.forEach(file => formData.append("attachments", file));
+
+// existing attachments (send IDs or URLs)
+editExistingAttachments.forEach(att => formData.append("existingAttachments[]", att._id || att.url));
+
+          try {
+            const res = await axios.put(`/api/v1/post/${editPost._id}`, formData, {
+              headers: { "Content-Type": "multipart/form-data" },
+            });
+            updatePostInState(editPost._id, res.data.data);
+            setEditPost(null);
+          } catch (err) {
+            console.error(err);
+          }
+        }}>Save</button>
+      </div>
+    </div>
+  </div>
+)}
 
       </div>
     </main>
