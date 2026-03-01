@@ -83,6 +83,36 @@ export default function Header() {
     return () => clearTimeout(timeout);
   }, [searchTerm]);
 
+  // Inside your form (Header.tsx modal)
+const saveDraft = async () => {
+  if (!title && !description && !content) {
+    setError('Cannot save empty draft');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('title', title);
+  formData.append('description', description);
+  formData.append('content', content);
+  formData.append('draft', 'true'); // <-- key difference
+  attachments.forEach(file => formData.append('attachments', file));
+
+  try {
+    const res = await axios.post('/api/v1/post', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    setSuccess('Draft saved successfully!');
+    setError('');
+    setTitle('');
+    setDescription('');
+    setContent('');
+    setAttachments([]);
+    setTimeout(() => setShowForm(false), 1000);
+  } catch (err: any) {
+    setError(err.response?.data?.message || 'Failed to save draft');
+  }
+};
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !description || !content) return setError('All fields are required');
@@ -296,12 +326,22 @@ export default function Header() {
             ))}
           </ul>
         )}
-        <button
-          type="submit"
-          className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded mt-2"
-        >
-          Publish
-        </button>
+        <div className="flex gap-2 mt-2">
+  <button
+    type="submit"
+    className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded"
+  >
+    Publish
+  </button>
+
+  <button
+    type="button"
+    onClick={saveDraft}
+    className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded"
+  >
+    Save Draft
+  </button>
+</div>
       </form>
     </div>
   </div>

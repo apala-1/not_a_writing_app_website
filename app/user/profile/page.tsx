@@ -23,8 +23,9 @@ export default function UserProfilePage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [savedPosts, setSavedPosts] = useState<Post[]>([]);
   const [likedPosts, setLikedPosts] = useState<Post[]>([]);
+  const [drafts, setDrafts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"posts" | "saved" | "liked">("posts");
+  const [activeTab, setActiveTab] = useState<"posts" | "saved" | "liked" | "drafts">("posts");
   const [showUsers, setShowUsers] = useState<null | "followers" | "following">(null);
   const [followers, setFollowers] = useState<Profile[]>([]);
   const [following, setFollowing] = useState<Profile[]>([]);
@@ -61,6 +62,18 @@ export default function UserProfilePage() {
     fetchProfile();
   }, []);
 
+  useEffect(() => {
+  async function fetchDrafts() {
+    try {
+      const res = await axios.get(`/api/v1/post/drafts`);
+      if(res.data.success) setDrafts(res.data.data);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  fetchDrafts();
+}, []);
+
   // Fetch followers/following
 const fetchFollowers = async () => {
   try {
@@ -88,6 +101,7 @@ const fetchFollowing = async () => {
     setPosts(prev => prev.map(p => p._id === postId ? { ...p, ...changes } : p));
     setSavedPosts(prev => prev.map(p => p._id === postId ? { ...p, ...changes } : p));
     setLikedPosts(prev => prev.map(p => p._id === postId ? { ...p, ...changes } : p));
+    setDrafts(prev => prev.map(p => p._id === postId ? { ...p, ...changes } : p));
   };
 
   // Like / Save functionality
@@ -128,8 +142,10 @@ const toggleSave = async (postId: string) => {
 const displayedPosts = activeTab === "posts"
   ? posts
   : activeTab === "saved"
-    ? posts.filter(p => p.isSaved)
-    : posts.filter(p => p.isLiked);
+    ? savedPosts
+    : activeTab === "liked"
+      ? likedPosts
+      : drafts;  // <-- show drafts in drafts tab
 
  const openEditModal = (post: Post) => {
   setEditPost(post);
@@ -216,6 +232,8 @@ const displayedPosts = activeTab === "posts"
             <button onClick={() => setActiveTab("posts")} className={`flex items-center gap-2 pb-2 ${activeTab === "posts" ? "text-black border-b-2 border-black" : ""}`}>📷 POSTS</button>
             <button onClick={() => setActiveTab("saved")} className={`flex items-center gap-2 pb-2 ${activeTab === "saved" ? "text-black border-b-2 border-black" : ""}`}>🔖 SAVED</button>
             <button onClick={() => setActiveTab("liked")} className={`flex items-center gap-2 pb-2 ${activeTab === "liked" ? "text-black border-b-2 border-black" : ""}`}>❤️ LIKED</button>
+              <button onClick={() => setActiveTab("drafts")} className={`flex items-center gap-2 pb-2 ${activeTab === "drafts" ? "text-black border-b-2 border-black" : ""}`}>📝 DRAFTS</button>
+
           </div>
         </div>
 
@@ -223,6 +241,9 @@ const displayedPosts = activeTab === "posts"
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {displayedPosts.map(post => (
     <div key={post._id} className="relative bg-white rounded-lg overflow-hidden border">
+      {activeTab === "drafts" && (
+  <span className="absolute top-0 left-0 bg-yellow-200 text-yellow-800 text-xs px-2 py-1 rounded-br">DRAFT</span>
+)}
 
               {post.author._id === profile._id && (
                 <div className="absolute top-2 right-2 flex gap-1 z-20">
