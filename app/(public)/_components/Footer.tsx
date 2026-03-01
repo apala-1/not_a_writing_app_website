@@ -60,7 +60,7 @@ export default function Footer() {
                 <li><Link href="/about" className="text-gray-600 hover:text-orange-600 transition-colors duration-200">About</Link></li>
                 <li><Link href="/blog" className="text-gray-600 hover:text-orange-600 transition-colors duration-200">Blog</Link></li>
                 <li><Link href="/contact" className="text-gray-600 hover:text-orange-600 transition-colors duration-200">Contact</Link></li>
-                <li><Link href="/privacy" className="text-gray-600 hover:text-orange-600 transition-colors duration-200">Privacy</Link></li>
+                <li><Link href="/privacy-policy" className="text-gray-600 hover:text-orange-600 transition-colors duration-200">Privacy</Link></li>
               </ul>
             </div>
           </div>
@@ -68,8 +68,8 @@ export default function Footer() {
           <div className="border-t border-gray-200 pt-8 flex flex-col md:flex-row justify-between items-center text-gray-600 text-sm">
             <p>© {new Date().getFullYear()} Not A Writing App. All rights reserved.</p>
             <div className="flex gap-6 mt-4 md:mt-0">
-              <Link href="/terms" className="hover:text-orange-600 transition-colors duration-200">Terms</Link>
-              <Link href="/privacy" className="hover:text-orange-600 transition-colors duration-200">Privacy</Link>
+              <Link href="/terms-and-conditions" className="hover:text-orange-600 transition-colors duration-200">Terms</Link>
+              <Link href="/privacy-policy" className="hover:text-orange-600 transition-colors duration-200">Privacy</Link>
               <Link href="/cookies" className="hover:text-orange-600 transition-colors duration-200">Cookies</Link>
             </div>
           </div>
