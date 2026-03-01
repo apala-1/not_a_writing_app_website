@@ -34,6 +34,8 @@ const userId = id; // now userId is defined
   const [posts, setPosts] = useState<Post[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
+  const [canMessage, setCanMessage] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // Fetch profile info
   useEffect(() => {
@@ -66,15 +68,26 @@ const userId = id; // now userId is defined
     };
 
     const checkOwnProfile = async () => {
-        try {
-            const res = await axios.get('/api/v1/auth/me');
-            if (res.data.success) {
-            setIsOwnProfile(res.data.data._id === userId);
-            }
-        } catch (err) {
-            console.error('Failed to check own profile', err);
-        }
-    };
+  try {
+    const res = await axios.get('/api/v1/auth/me');
+
+    if (res.data.success) {
+      const me = res.data.data._id;
+
+      setCurrentUserId(me);
+      setIsOwnProfile(me === userId);
+
+      // ⭐ CALL can-message after we know who I am
+      const msgRes = await axios.get(`/api/v1/follow/can-message/${me}/${userId}`);
+
+      if (msgRes.data.success) {
+        setCanMessage(msgRes.data.canMessage);
+      }
+    }
+  } catch (err) {
+    console.error('Failed to check own profile', err);
+  }
+};
 
     fetchProfile();
     fetchPosts();
@@ -133,16 +146,27 @@ const userId = id; // now userId is defined
               </div>
             </div>
             {!isOwnProfile && (
-  <button
-    onClick={handleFollowToggle}
-    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-      isFollowing
-        ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-        : 'bg-blue-500 text-white hover:bg-blue-600'
-    }`}
-  >
-    {isFollowing ? 'Unfollow' : 'Follow'}
-  </button>
+  <div className="flex gap-3">
+    <button
+      onClick={handleFollowToggle}
+      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+        isFollowing
+          ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+          : 'bg-blue-500 text-white hover:bg-blue-600'
+      }`}
+    >
+      {isFollowing ? 'Unfollow' : 'Follow'}
+    </button>
+
+    {canMessage && (
+      <button
+        onClick={() => router.push(`/user/messages/${userId}`)}
+        className="px-4 py-2 rounded-full text-sm font-medium bg-green-500 text-white hover:bg-green-600"
+      >
+        Message
+      </button>
+    )}
+  </div>
 )}
           </div>
 
