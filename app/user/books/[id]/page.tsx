@@ -87,16 +87,36 @@ console.log("Is Author:", isAuthor, "Current User ID:", currentUserId, "Book Aut
   };
 
   const handleDeleteChapter = async (index: number) => {
-    if (!confirm("Delete this chapter?")) return;
-    try {
-      const chaptersCopy = [...book.chapters];
-      chaptersCopy.splice(index, 1);
-      const res = await axios.put(`/api/v1/book/${book._id}`, { chapters: chaptersCopy });
-      setBook(res.data.data);
-    } catch (err) {
-      console.error(err);
+  if (book.chapters.length === 1) {
+    const confirmDeleteBook = confirm(
+      "A book must have at least one chapter.\n\nDo you want to delete the entire book instead?"
+    );
+
+    if (confirmDeleteBook) {
+      try {
+        await axios.delete(`/api/v1/book/${book._id}`);
+        router.push("/"); // or /my-books
+      } catch (err) {
+        console.error(err);
+      }
     }
-  };
+
+    return;
+  }
+
+  if (!confirm("Delete this chapter?")) return;
+
+  try {
+    const chaptersCopy = [...book.chapters];
+    chaptersCopy.splice(index, 1);
+    const res = await axios.put(`/api/v1/book/${book._id}`, {
+      chapters: chaptersCopy,
+    });
+    setBook(res.data.data);
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   const handleAddContentBlock = (type: "text" | "image") => {
     setChapterContent([...chapterContent, { type, value: "" }]);
