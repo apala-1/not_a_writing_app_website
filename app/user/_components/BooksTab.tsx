@@ -35,8 +35,8 @@ export default function BooksTab() {
   if (loading) return <div>Loading your books...</div>;
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold mb-8">My Books</h1>
+    <div className="max-w-9xl mx-auto min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-rose-50 py-8 relative overflow-hidden p-10">
+      <h1 className="text-3xl font-bold mb-8 text-orange-600">My Books</h1>
 
       {books.length === 0 ? (
         <div className="text-center py-12">
@@ -58,7 +58,7 @@ export default function BooksTab() {
                 />
               )}
               <div className="p-4">
-                <h2 className="font-bold text-lg">{book.title}</h2>
+                <h2 className="font-bold text-lg text-orange-600">{book.title}</h2>
                 <p className="text-sm text-gray-600 mt-2">
                   {book.description}
                 </p>

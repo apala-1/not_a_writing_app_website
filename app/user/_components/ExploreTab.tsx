@@ -37,8 +37,8 @@ export default function ExploreTab() {
   if (loading) return <div>Loading books...</div>;
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold mb-8">Explore Books</h1>
+    <div className="max-w-6xl mx-auto max-w-9xl mx-auto min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-rose-50 py-8 relative overflow-hidden p-10">
+      <h1 className="text-3xl font-bold mb-8 text-orange-600">Explore Books</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {books.map((book) => (
@@ -56,7 +56,7 @@ export default function ExploreTab() {
             )}
 
             <div className="p-4">
-              <h2 className="font-bold text-lg">{book.title}</h2>
+              <h2 className="font-bold text-lg text-orange-600">{book.title}</h2>
               <p className="text-sm text-gray-500 mt-1">
                 by {book.author.name}
               </p>
