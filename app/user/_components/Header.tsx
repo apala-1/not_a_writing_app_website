@@ -53,9 +53,13 @@ export default function Header() {
   // Click outside to close dropdowns/modals
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setDropdownOpen(false);
-      }
+  if (!dropdownRef.current) return;
+
+  const target = event.target as Node;
+
+  if (dropdownRef.current && !dropdownRef.current.contains(target)) {
+    setDropdownOpen(false);
+  }
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setSearchOpen(false);
       }
@@ -151,7 +155,7 @@ export default function Header() {
 
   return (
     <>
-      <header className="bg-gradient-to-br from-orange-50 via-amber-50 to-rose-50 relative overflow-hidden backdrop-blur-xl border-b-2 border-orange-200 sticky top-0 z-50 shadow-sm">
+      <header className="bg-gradient-to-br from-orange-50 via-amber-50 to-rose-50 relative overflow-visible backdrop-blur-xl border-b-2 border-orange-200 sticky top-0 z-50 shadow-sm">
         <div className="w-full px-6 lg:px-12 h-20 flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-3">
@@ -246,9 +250,12 @@ export default function Header() {
             {/* Profile dropdown */}
             <div ref={dropdownRef} className="relative">
               <div
-                className="flex items-center gap-2 cursor-pointer group"
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-              >
+  className="flex items-center gap-2 cursor-pointer group"
+  onClick={(e) => {
+    e.stopPropagation();
+    setDropdownOpen(prev => !prev);
+  }}
+>
                 <div className="w-11 h-11 rounded-full overflow-hidden bg-gradient-to-br from-orange-200 to-rose-200 ring-2 ring-orange-200 group-hover:ring-orange-400 transition-all duration-200 shadow-md">
                   {user?.profilePicture ? (
                     <img
