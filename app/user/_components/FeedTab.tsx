@@ -292,26 +292,26 @@ const reportPost = async (postId: string) => {
                     <div className="flex items-center justify-between">
                       <div 
                         className="flex items-center gap-3 cursor-pointer group"
-                        onClick={() => router.push(`/user/profile/${post.author._id}`)}
+                        onClick={() => router.push(`/user/profile/${post.author?._id}`)}
                       >
                         <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-200 to-rose-200 overflow-hidden ring-2 ring-white shadow-md group-hover:ring-orange-400 transition-all duration-200">
-                          {post.author.profilePicture ? (
+                          {post.author?.profilePicture ? (
                             <img
                               src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/profiles/${post.author.profilePicture}`}
-                              alt={post.author.name}
+                              alt={post.author?.name}
                               className="w-full h-full object-cover"
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
                               <span className="text-lg font-bold text-orange-600">
-                                {post.author.name[0]?.toUpperCase()}
+                                {post.author?.name[0]?.toUpperCase()}
                               </span>
                             </div>
                           )}
                         </div>
                         <div>
                           <h3 className="font-bold text-gray-900 group-hover:text-orange-600 transition-colors">
-                            {post.author.name}
+                            {post.author?.name}
                           </h3>
                           <p className="text-xs text-gray-500">
                             {new Date(post.createdAt).toLocaleDateString('en-US', {
@@ -335,7 +335,7 @@ const reportPost = async (postId: string) => {
 
   {openDropdown[post._id] && (
     <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-xl shadow-lg z-20">
-      {post.author._id === currentUserId ? (
+      {post.author?._id === currentUserId ? (
         <button
           onClick={() => saveAsDraft(post._id)}
           className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-t-xl"
