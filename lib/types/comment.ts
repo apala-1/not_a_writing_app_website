@@ -10,5 +10,6 @@ export interface Comment {
   _id: string;
   content: string;
   user: CommentUser;
+  replies?: Comment[];
   createdAt: string;
 }

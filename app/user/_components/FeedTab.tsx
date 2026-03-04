@@ -9,13 +9,26 @@ import { Comment } from "@/lib/types/comment";
 
 export default function Dashboard() {
   const [posts, setPosts] = useState<Post[]>([]);
-  const [commentsMap, setCommentsMap] = useState<Record<string, Comment[]>>({});
-  const [commentInput, setCommentInput] = useState<Record<string, string>>({});
   const [expandedPosts, setExpandedPosts] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<Record<string, boolean>>({});
   const [activeTab, setActiveTab] = useState<"feed" | "books" | "explore" | "create">("feed");
+  type CommentState = Comment & {
+  replies: CommentState[];
+  isReplying?: boolean;
+  isEditing?: boolean;
+  replyContent?: string;
+  editContent?: string;
+};
+
+type PostState = Post & {
+  comments: CommentState[];
+  commentInput: string;
+};
+
+
+const [postsState, setPostsState] = useState<PostState[]>([]);
   
   const router = useRouter();
 
@@ -32,19 +45,36 @@ export default function Dashboard() {
 }, []);
 
   useEffect(() => {
-    async function fetchPosts() {
-      try {
-        const res = await axios.get("/api/v1/post");
-        setPosts(res.data.data);
-      } catch (err) {
-        console.error("Failed to fetch posts", err);
-      } finally {
-        setLoading(false);
-      }
+  async function fetchPosts() {
+    try {
+      const res = await axios.get("/api/v1/post");
+      const posts: PostState[] = await Promise.all(
+        res.data.data.map(async (post: Post) => {
+          const commentsRes = await axios.get(`/api/v1/comments/post/${post._id}`);
+          return {
+            ...post,
+            comments: commentsRes.data.data.map((c: Comment) => ({
+              ...c,
+              replies: c.replies || [],
+              isReplying: false,
+              isEditing: false,
+              replyContent: "",
+              editContent: c.content,
+            })),
+            commentInput: "",
+          };
+        })
+      );
+      setPostsState(posts);
+    } catch (err) {
+      console.error("Failed to fetch posts with comments", err);
+    } finally {
+      setLoading(false);
     }
+  }
 
-    fetchPosts();
-  }, []);
+  fetchPosts();
+}, []);
 
   const toggleLike = async (postId: string) => {
     try {
@@ -90,47 +120,100 @@ export default function Dashboard() {
     }
   };
 
-  const fetchComments = async (postId: string) => {
-    try {
-      const res = await axios.get(`/api/v1/comments/post/${postId}`);
+  const toggleReply = (postId: string, commentId: string) => {
+  setPostsState(prev => prev.map(post => post._id === postId
+    ? {...post, comments: post.comments.map(c => c._id === commentId ? {...c, isReplying: !c.isReplying} : c)}
+    : post
+  ));
+};
 
-      setCommentsMap(prev => ({
-        ...prev,
-        [postId]: res.data.data,
-      }));
-    } catch (err) {
-      console.error("Failed to load comments", err);
-    }
-  };
+const addComment = async (postId: string) => {
+  const post = postsState.find(p => p._id === postId);
+  if (!post?.commentInput?.trim()) return;
 
-  const addComment = async (postId: string) => {
-    const content = commentInput[postId];
-    if (!content?.trim()) return;
+  try {
+    const res = await axios.post("/api/v1/comments", { postId, content: post.commentInput });
+    setPostsState(prev => prev.map(p => p._id === postId
+      ? {...p, comments: [...p.comments, {...res.data.data, replies: [], isReplying: false, isEditing: false, replyContent: "", editContent: res.data.data.content}], commentInput: "", commentsCount: p.commentsCount + 1}
+      : p
+    ));
+  } catch (err) {
+    console.error(err);
+  }
+};
 
-    try {
-      const res = await axios.post("/api/v1/comments", {
-        postId,
-        content,
-      });
+const addReply = async (postId: string, commentId: string) => {
+  const post = postsState.find(p => p._id === postId);
+  const comment = post?.comments.find(c => c._id === commentId);
+  if (!comment?.replyContent?.trim()) return;
 
-      setCommentsMap(prev => ({
-        ...prev,
-        [postId]: [...(prev[postId] || []), res.data.data],
-      }));
+  try {
+    const res = await axios.post("/api/v1/comments/reply", { postId, content: comment.replyContent, parentCommentId: commentId });
+    setPostsState(prev => prev.map(p => p._id === postId
+      ? {...p, comments: p.comments.map(c => c._id === commentId ? {...c, replies: [...c.replies, {...res.data.data, replies: [], isReplying: false, isEditing: false, replyContent: "", editContent: res.data.data.content}], replyContent: ""} : c)}
+      : p
+    ));
+  } catch (err) {
+    console.error(err);
+  }
+};
 
-      setPosts(prev =>
-        prev.map(post =>
-          post._id === postId
-            ? { ...post, commentsCount: post.commentsCount + 1 }
-            : post
-        )
-      );
+const startEditComment = (postId: string, commentId: string) => {
+  setPostsState(prev => prev.map(p => p._id === postId
+    ? {...p, comments: p.comments.map(c => c._id === commentId ? {...c, isEditing: true} : c)}
+    : p
+  ));
+};
 
-      setCommentInput(prev => ({ ...prev, [postId]: "" }));
-    } catch (err) {
-      console.error("Comment failed", err);
-    }
-  };
+const cancelEditComment = (postId: string, commentId: string) => {
+  setPostsState(prev => prev.map(p => p._id === postId
+    ? {...p, comments: p.comments.map(c => c._id === commentId ? {...c, isEditing: false, editContent: c.content} : c)}
+    : p
+  ));
+};
+
+const saveEditedComment = async (postId: string, commentId: string) => {
+  const post = postsState.find(p => p._id === postId);
+  const comment = post?.comments.find(c => c._id === commentId);
+  if (!comment) return;
+
+  try {
+    await axios.patch(`/api/v1/comments/${commentId}`, { content: comment.editContent });
+    setPostsState(prev =>
+  prev.map(p =>
+    p._id === postId
+      ? {
+          ...p,
+          comments: p.comments.map(c =>
+            c._id === commentId
+              ? {
+                  ...c,
+                  content: c.editContent ?? c.content,
+                  isEditing: false,
+                  editContent: undefined,
+                }
+              : c
+          ),
+        }
+      : p
+  )
+);
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+const deleteComment = async (postId: string, commentId: string) => {
+  try {
+    await axios.delete(`/api/v1/comments/${commentId}`);
+    setPostsState(prev => prev.map(p => p._id === postId
+      ? {...p, comments: p.comments.filter(c => c._id !== commentId)}
+      : p
+    ));
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   const saveAsDraft = async (postId: string) => {
   try {
@@ -188,7 +271,7 @@ const reportPost = async (postId: string) => {
 
           {/* Posts Feed */}
           <div className="space-y-6">
-            {posts.length === 0 ? (
+            {postsState.length === 0 ? (
               <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-lg border border-white/20 p-12 text-center">
                 <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
                   <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -199,7 +282,7 @@ const reportPost = async (postId: string) => {
                 <p className="text-gray-600">Follow some writers to see their posts here!</p>
               </div>
             ) : (
-              posts.map((post) => (
+              postsState.map((post) => (
                 <article 
                   key={post._id} 
                   className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-lg border border-white/20 overflow-hidden hover:shadow-xl transition-all duration-300 animate-scale-in"
@@ -339,9 +422,6 @@ const reportPost = async (postId: string) => {
                               [post._id]: !prev[post._id],
                             }));
 
-                            if (!commentsMap[post._id] && !expandedPosts[post._id]) {
-                              await fetchComments(post._id);
-                            }
                           }}
                           className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all duration-200 ${
                             expandedPosts[post._id]
@@ -381,65 +461,115 @@ const reportPost = async (postId: string) => {
                   {expandedPosts[post._id] && (
                     <div className="px-6 py-4 border-t border-gray-200 bg-gradient-to-r from-orange-50/30 to-rose-50/30 animate-scale-in">
                       {/* Comments List */}
-                      {commentsMap[post._id] && commentsMap[post._id].length > 0 ? (
-                        <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
-                          {commentsMap[post._id].map(comment => (
-                            <div key={comment._id} className="flex gap-3 bg-white p-3 rounded-xl shadow-sm">
-                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-200 to-rose-200 flex-shrink-0 overflow-hidden">
-                                {comment.user.profilePicture ? (
-                                  <img
-                                    src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/profiles/${comment.user.profilePicture}`}
-                                    alt={comment.user.name}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center">
-                                    <span className="text-xs font-bold text-orange-600">
-                                      {comment.user?.name?.[0]?.toUpperCase() ?? "U"}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex-1">
-                                <p className="font-semibold text-sm text-gray-900">
-                                  {comment.user?.name ?? "Unknown User"}
-                                </p>
-                                <p className="text-sm text-gray-700 mt-1">
-                                  {comment.content}
-                                </p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-gray-500 text-center py-4">
-                          No comments yet. Be the first to comment!
-                        </p>
-                      )}
+                      {post.comments.map(comment => (
+  <div key={comment._id} className="flex flex-col gap-2 bg-white p-3 rounded-xl shadow-sm">
+
+    <div className="flex gap-3">
+      <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200">
+        {comment.user.profilePicture ? (
+          <img
+            src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/profiles/${comment.user.profilePicture}`}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <span className="text-xs font-bold">{comment.user.name?.[0]?.toUpperCase() || "U"}</span>
+        )}
+      </div>
+
+      <div className="flex-1">
+        <p className="font-semibold text-sm">{comment.user.name}</p>
+
+        {comment.isEditing ? (
+          <div className="flex gap-2 mt-1">
+            <input
+              className="flex-1 border rounded px-2 py-1"
+              value={comment.editContent}
+              onChange={e => {
+                setPostsState(prev => prev.map(p => p._id === post._id
+                  ? {...p, comments: p.comments.map(c => c._id === comment._id ? {...c, editContent: e.target.value} : c)}
+                  : p
+                ));
+              }}
+            />
+            <button onClick={() => saveEditedComment(post._id, comment._id)}>Save</button>
+            <button onClick={() => cancelEditComment(post._id, comment._id)}>Cancel</button>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-700">{comment.content}</p>
+        )}
+
+        <div className="flex gap-2 mt-1 text-xs">
+          <button onClick={() => toggleReply(post._id, comment._id)} className="text-blue-500">Reply</button>
+          {comment.user._id === currentUserId && (
+  <>
+    <button onClick={() => startEditComment(post._id, comment._id)}>
+      Edit
+    </button>
+    <button onClick={() => deleteComment(post._id, comment._id)}>
+      Delete
+    </button>
+  </>
+)}
+        </div>
+      </div>
+    </div>
+
+    {/* Replies */}
+    {comment.replies.map(reply => (
+      <div key={reply._id} className="flex gap-3 ml-16 mt-2 p-2 bg-gray-50 border-l-2 border-orange-300 rounded-r-xl shadow-sm">
+        <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-200">
+          {reply.user.profilePicture ? (
+            <img src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/profiles/${reply.user.profilePicture}`} className="w-full h-full object-cover"/>
+          ) : (
+            <span className="text-xs font-bold">{reply.user.name?.[0]?.toUpperCase() || "U"}</span>
+          )}
+        </div>
+        <div className="flex-1">
+          <p className="font-semibold text-sm">{reply.user.name}</p>
+          <p className="text-sm text-gray-700">{reply.content}</p>
+        </div>
+      </div>
+    ))}
+
+    {/* Reply input */}
+    {comment.isReplying && (
+      <div className="flex gap-3 mt-2 ml-10 items-end">
+        <input
+          type="text"
+          value={comment.replyContent}
+          onChange={e => setPostsState(prev => prev.map(p => p._id === post._id
+            ? {...p, comments: p.comments.map(c => c._id === comment._id ? {...c, replyContent: e.target.value} : c)}
+            : p
+          ))}
+          placeholder={`Reply to ${comment.user.name}`}
+          className="flex-1 border-2 border-gray-200 bg-white rounded-xl px-4 py-2 text-sm"
+        />
+        <button onClick={() => addReply(post._id, comment._id)}>Reply</button>
+      </div>
+    )}
+  </div>
+))}
 
                       {/* Add Comment Input */}
                       <div className="flex gap-3 items-end">
                         <input
-                          type="text"
-                          value={commentInput[post._id] || ""}
-                          onChange={(e) =>
-                            setCommentInput(prev => ({
-                              ...prev,
-                              [post._id]: e.target.value,
-                            }))
-                          }
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault();
-                              addComment(post._id);
-                            }
-                          }}
-                          placeholder="Write a comment..."
-                          className="flex-1 border-2 border-gray-200 bg-white rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-orange-100 focus:border-orange-400 transition-all duration-200"
-                        />
+  type="text"
+  value={post.commentInput}
+  onChange={(e) =>
+    setPostsState(prev => prev.map(p => p._id === post._id ? {...p, commentInput: e.target.value} : p))
+  }
+  onKeyDown={(e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      addComment(post._id);
+    }
+  }}
+  placeholder="Write a comment..."
+  className="flex-1 border-2 border-gray-200 bg-white rounded-xl px-4 py-3 text-sm"
+/>
                         <button
                           onClick={() => addComment(post._id)}
-                          disabled={!commentInput[post._id]?.trim()}
+                          disabled={!post.commentInput?.trim()}
                           className="px-6 py-3 bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 text-white rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-md hover:shadow-lg"
                         >
                           <Send size={16} />
