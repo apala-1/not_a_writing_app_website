@@ -2,6 +2,7 @@
 import Header from "@/app/(public)/_components/Header";
 import AdminUsersTable from "../_components/AdminUsersTable";
 import { cookies } from "next/headers";
+import AdminHeader from "../_components/AdminHeader";
 
 async function fetchUsers(page = 1, size = 10) {
   const cookieStore = await cookies();
@@ -25,7 +26,7 @@ export default async function AdminUsersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <AdminHeader />
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-800">Users</h1>

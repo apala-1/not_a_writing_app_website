@@ -2,6 +2,7 @@
 import Header from "@/app/(public)/_components/Header";
 import AdminPostsTable from "../_components/AdminPostsTable";
 import { cookies } from "next/headers";
+import AdminHeader from "../_components/AdminHeader";
 
 async function fetchPosts(page = 1, size = 10) {
   const cookieStore = await cookies();
@@ -27,7 +28,7 @@ export default async function AdminPostsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <AdminHeader />
       <main className="max-w-7xl mx-auto px-6 py-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-6">Posts</h1>
 

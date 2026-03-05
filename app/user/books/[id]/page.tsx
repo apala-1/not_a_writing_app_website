@@ -248,6 +248,7 @@ export default function BookPage() {
             <p className="text-gray-700 text-lg leading-relaxed mb-8 border-l-4 border-orange-400 pl-4 italic">
               {book.description}
             </p>
+            
 
             <div className="border-t border-gray-100 pt-8">
               <div className="flex items-center justify-between mb-6">

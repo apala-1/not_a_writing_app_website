@@ -74,51 +74,79 @@ export default function CreateBookTab() {
     );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) return;
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!title.trim() || selectedPostIds.length === 0) return;
 
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      const chapters = posts
-        .filter(post => selectedPostIds.includes(post._id))
-        .map(post => ({
-          title: post.title || "Untitled",
-          content:
-            post.attachments && post.attachments.length > 0
-              ? post.attachments.map(att => ({
-                  type: att.type,
-                  value: att.type === "image" ? (att as ImageAttachment).url : (att as TextAttachment).value
-                }))
-              : [{ type: "text", value: post.body || "" }]
-        }));
+    const chapters = posts
+      .filter(post => selectedPostIds.includes(post._id))
+      .map(post => {
+        console.log("Processing post:", post._id, post.title); // log post
 
-      const formData = new FormData();
-      formData.append("title", title);
-      formData.append("description", description);
-      formData.append("chapters", JSON.stringify(chapters));
-      
-      if (coverImage) {
-        formData.append("coverPhoto", coverImage);
-      }
+        const contentItems: { type: "text" | "image"; value: string }[] = [];
 
-      const res = await axios.post("/api/v1/book", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+        if (post.body && post.body.trim()) {
+          console.log("Adding body text:", post.body);
+          contentItems.push({ type: "text", value: post.body.trim() });
+        }
+
+        if (post.attachments && post.attachments.length > 0) {
+          post.attachments.forEach(att => {
+            if (att.type === "image" && (att as ImageAttachment).url?.trim()) {
+              console.log("Adding image attachment:", (att as ImageAttachment).url);
+              contentItems.push({ type: "image", value: (att as ImageAttachment).url });
+            } else {
+              console.log("Skipping attachment:", att);
+            }
+          });
+        }
+
+        if (contentItems.length === 0) {
+          console.log("No content found for post, adding fallback");
+          contentItems.push({ type: "text", value: "No content provided" });
+        }
+
+        console.log("Final content items for this chapter:", contentItems);
+
+        return {
+          title: post.title || "Untitled Post",
+          content: contentItems,
+        };
       });
-      router.push(`/user/books/${res.data.data._id}`);
-    } catch (err) {
-      if (err instanceof AxiosError) {
-        console.error("Server response:", err.response?.data);
-      } else {
-        console.error("Unknown error:", err);
-      }
-    } finally {
-      setLoading(false);
+
+    console.log("All chapters ready to send:", JSON.stringify(chapters, null, 2));
+
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("description", description || "");
+    formData.append("chapters", JSON.stringify(chapters));
+
+    if (coverImage) {
+      console.log("Adding cover image:", coverImage.name);
+      formData.append("coverPhoto", coverImage);
     }
-  };
+
+    const res = await axios.post("/api/v1/book", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    console.log("Book created successfully:", res.data);
+    router.push(`/user/books/${res.data.data._id}`);
+  } catch (err) {
+    if (err instanceof AxiosError) {
+      console.error("Server response:", err.response?.data);
+      alert(err.response?.data?.message || "Failed to create book");
+    } else {
+      console.error("Unknown error:", err);
+      alert("Something went wrong");
+    }
+  } finally {
+    setLoading(false);
+  }
+}
 
   return (
     <div className="max-w-4xl mx-auto pb-20 max-w-9xl mx-auto min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-rose-50 py-8 relative overflow-hidden p-10">

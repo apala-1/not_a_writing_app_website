@@ -35,21 +35,29 @@ export default function LoginForm() {
     mode: "onSubmit",
   });
 
-  const onSubmit = async (values: LoginData) => {
-    setGlobalError(null);
-    setGlobalSuccess(null);
+ const onSubmit = async (values: LoginData) => {
+  setGlobalError(null);
+  setGlobalSuccess(null);
 
-    try {
-      await login(values);
-      setGlobalSuccess("Login successful! Redirecting...");
+  try {
+    const res = await login(values); // returns { success, message, data: { token, user } }
+    const { user, token } = res.data;
 
-      setTimeout(() => {
+    setToken(token); // save token if you use it
+
+    setGlobalSuccess("Login successful! Redirecting...");
+
+    setTimeout(() => {
+      if (user.role === "admin") {
+        router.push("/admin/users");
+      } else {
         router.push("/user/dashboard");
-      }, 1500);
-    } catch (err: any) {
-      setGlobalError(err.message || "Login failed");
-    }
-  };
+      }
+    }, 1500);
+  } catch (err: any) {
+    setGlobalError(err.message || "Login failed");
+  }
+};
 
   const handleGoogleResponse = async (response: any) => {
   setGlobalError(null);
