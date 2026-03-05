@@ -1,8 +1,14 @@
 import { render, screen } from "@testing-library/react";
 import LoginPage from "@/app/(auth)/login/page";
+import "@testing-library/jest-dom";
+
+// Mock Next.js special components
+jest.mock('next/script', () => ({ children }: any) => <>{children}</>);
+jest.mock('next/image', () => (props: any) => <img {...props} />);
+jest.mock('next/link', () => ({ children }: any) => <>{children}</>);
 
 describe("LoginPage", () => {
- it("renders LoginForm inside page", () => {
+  it("renders LoginForm inside page", () => {
     render(<LoginPage />);
 
     // check email input
@@ -12,13 +18,15 @@ describe("LoginPage", () => {
 
     // check password input
     expect(
-      screen.getByPlaceholderText(/Enter your password/i)
+      screen.getByPlaceholderText(/enter your password/i)
     ).toBeInTheDocument();
   });
 
-  it("renders page heading", () => {
-  render(<LoginPage />);
-  const heading = screen.getByText(/welcome back/i);
-  expect(heading).toBeInTheDocument();
-});
+  it("renders main heading", () => {
+    render(<LoginPage />);
+    
+    // match the main h1 heading specifically
+    const heading = screen.getByText(/welcome back to/i);
+    expect(heading).toBeInTheDocument();
+  });
 });
