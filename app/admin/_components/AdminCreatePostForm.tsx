@@ -48,7 +48,7 @@ export default function AdminCreatePostForm() {
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full border px-3 py-2 rounded"
+          className="w-full border px-3 py-2 rounded text-gray-800"
           required
         />
       </div>
@@ -58,7 +58,7 @@ export default function AdminCreatePostForm() {
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          className="w-full border px-3 py-2 rounded h-40"
+          className="w-full border px-3 py-2 rounded h-40 text-gray-800"
           required
         />
       </div>

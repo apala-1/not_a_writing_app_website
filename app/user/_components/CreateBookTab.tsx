@@ -171,7 +171,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                 value={title}
                 onChange={e => setTitle(e.target.value)}
                 placeholder="The Chronicles of..."
-                className="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-orange-500/20 focus:bg-white transition-all outline-none text-lg font-medium placeholder:text-slate-400"
+                className="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-orange-500/20 focus:bg-white transition-all outline-none text-lg font-medium placeholder:text-slate-400 text-gray-800"
                 required
               />
             </div>
@@ -182,7 +182,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 placeholder="What is your book about?"
-                className="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-orange-500/20 focus:bg-white transition-all outline-none min-h-[160px] resize-none placeholder:text-slate-400"
+                className="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-orange-500/20 focus:bg-white transition-all outline-none min-h-[160px] resize-none placeholder:text-slate-400 text-gray-800"
               />
             </div>
           </section>
